@@ -13,7 +13,6 @@ mongo = PyMongo(app)
 @app.route('/login', methods=['POST'])
 def login():
     users = mongo.db.users
-    print users
     login_user = users.find_one({'username' : request.form['username']})
     if login_user:
         if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password'].encode('utf-8')) == login_user['password'].encode('utf-8'):
