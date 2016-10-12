@@ -21,6 +21,16 @@ Save your installed package as dependency in requirements.txt
 Deactivate env
 `deactivate`
 
-I'm still working on the Dockerfile
-`docker run -expose 5000 -p localhost:5000:5000 -t cloud-testing`
+Docker commands
+
+build image from `src/` folder `-t` flag to name image
+`docker build -t app .`
+
+run image and `-p` port mapping `$hostport:$containerPort` `-d` detached from terminal
+`docker run -d -p 5000:5000 -t app`
+
+kill all running process
 `docker kill $(docker ps -q)`
+
+remove all images with force
+`docker rmi --force $(docker images -a -q)`

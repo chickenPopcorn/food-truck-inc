@@ -10,6 +10,13 @@ app.config['MONGO_URI'] = 'mongodb://user:user@ds055626.mlab.com:55626/cloudlogi
 
 mongo = PyMongo(app)
 
+# testing route
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+
+# log in API post only
 @app.route('/login', methods=['POST'])
 def login():
     users = mongo.db.users
@@ -23,6 +30,7 @@ def login():
     return jsonify({'status': 400})
     # login failed
 
+# register in API post only
 @app.route('/register', methods=['POST'])
 def register():
     users = mongo.db.users
@@ -37,7 +45,6 @@ def register():
     return jsonify({'status': 404})
     # user already exist
 
-
 if __name__ == '__main__':
     app.secret_key = 'mysecret'
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=False)
