@@ -10,7 +10,7 @@ install:
 
 # command to run tests
 script:
-  coverage run --source=cloudProject manage.py test
+  coverage run manage.py cov
 
 after_success:
   coveralls
