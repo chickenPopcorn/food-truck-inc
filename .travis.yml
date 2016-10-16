@@ -3,7 +3,7 @@ python:
   - "2.7"
 
 before_script:
-  - cd src/app/
+  - cd src/
 
 # command to install dependencies
 install: "pip install -r requirements.txt"
