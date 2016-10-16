@@ -1,26 +1,7 @@
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app
-from flask_testing import TestCase
-import unittest
-import json
-
-class BaseTestCase(TestCase):
-    """A base test case."""
-
-    def create_app(self):
-        app.config.from_object('server.config.TestConfig')
-        return app
-    '''
-    def setUp(self):
-        db.create_all()
-        # db.session.add(User("admin", "ad@min.com", "admin"))
-        # db.session.add(
-        #    BlogPost("Test post", "This is a test. Only a test.", "admin"))
-        # db.session.commit()
-
-    def tearDown(self):
-        # db.session.remove()
-        db.drop_all()
-    '''
+from blueprint_test_case import BaseTestCase
 
 class FlaskTestCase(BaseTestCase):
 
@@ -30,14 +11,8 @@ class FlaskTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, "Hello, World!")
 
-    '''
-    # Ensure that the login page loads correctly
-    def test_login_page_loads(self):
-        response = tester.get('/login')
-        self.assertIn(b'Please login', response.data)
-    '''
-
     def test_register_login_delete_change_password(self):
+        # register a new user
         response = self.client.post(
             '/register',
             data=dict(
@@ -50,16 +25,17 @@ class FlaskTestCase(BaseTestCase):
             ),
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'The registration is successful!', json.loads(response.data)["message"])
+        self.assertIn(b'The registration is successful!', response.data)
 
-
+        # login as that user
         response = self.client.post(
             '/login',
             data = dict(username="rxie25", password="zhedouxing")
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Login successful!', json.loads(response.data)["message"])
+        self.assertIn(b'Login successful!', response.data)
 
+        # change user's password
         response = self.client.post(
             '/changePassword',
             data=dict(
@@ -69,8 +45,9 @@ class FlaskTestCase(BaseTestCase):
             ),
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(u'Your password has been changed!', json.loads(response.data)["message"])
+        self.assertIn(u'Your password has been changed!', response.data)
 
+        # delete that user
         response = self.client.post(
             '/delete',
             data=dict(
@@ -79,23 +56,9 @@ class FlaskTestCase(BaseTestCase):
             )
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(u'Your account has been deleted!', json.loads(response.data)["message"])
-
-    # Ensure login behaves correctly with incorrect credentials
-    def test_incorrect_login(self):
-        response = self.client.post(
-            '/login',
-            data=dict(username="wrong!", password="wrong!"),
-        )
-        self.assertIn(u'The username and password does not match!', json.loads(response.data)["message"])
-        self.assertEqual(response.status_code, 200)
-
-
+        self.assertIn(u'Your account has been deleted!', response.data)
 
     '''
-    def test_delete(self):
-
-
 
     # Ensure logout behaves correctly
     def test_logout(self):
