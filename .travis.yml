@@ -1,0 +1,16 @@
+language: python
+python:
+  - "2.7"
+
+# command to install dependencies
+install:
+  - "cd src/"
+  - "pip install -r requirements.txt"
+  - "pip install coveralls"
+
+# command to run tests
+script:
+  coverage run manage.py cov
+
+after_success:
+  coveralls
