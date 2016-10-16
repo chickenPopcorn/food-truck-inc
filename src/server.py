@@ -1,5 +1,6 @@
 from flask import Flask, request, session, jsonify
 from flask_pymongo import PyMongo
+from server.data_access.user_data_access import UserDataAccess
 import bcrypt
 
 
@@ -19,16 +20,9 @@ def hello_world():
 # log in API post only
 @app.route('/login', methods=['POST'])
 def login():
-    users = mongo.db.users
-    login_user = users.find_one({'username' : request.form['username']})
-    if login_user:
-        if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password'].encode('utf-8')) == login_user['password'].encode('utf-8'):
-            session['username'] = request.form['username']
-            return jsonify({'status': 200})
-            # login successful
-
-    return jsonify({'status': 400})
-    # login failed
+    uda = UserDataAccess(mongo.db.customeruserlogin)
+    output = uda.authorize(request.form)
+    return jsonify(output)
 
 # register in API post only
 @app.route('/register', methods=['POST'])
