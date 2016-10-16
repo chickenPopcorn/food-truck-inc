@@ -27,17 +27,9 @@ def login():
 # register in API post only
 @app.route('/register', methods=['POST'])
 def register():
-    users = mongo.db.users
-    existing_user = users.find_one({'name' : request.form['username']})
-    if existing_user is None:
-        hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
-        users.insert({'username' : request.form['username'], 'password' : hashpass})
-        session['username'] = request.form['username']
-        return jsonify({'status': 202})
-        # registraton accepted
-
-    return jsonify({'status': 404})
-    # user already exist
+    uda = UserDataAccess(mongo.db.customeruserlogin)
+    output = uda.register(request.form)
+    return jsonify(output)
 
 if __name__ == '__main__':
     app.secret_key = 'mysecret'
