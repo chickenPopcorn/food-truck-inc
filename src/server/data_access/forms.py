@@ -10,6 +10,15 @@ class LoginForm(Form):
         [DataRequired(), Length(min=6, max=25)]
     )
 
+class DeleteForm(Form):
+    username = TextField(
+        u'Username', [DataRequired(), Length(min=4, max=25)]
+    )
+    password = PasswordField(
+        u'Password',
+        [DataRequired(), Length(min=6, max=25)]
+    )
+
 class RegisterForm(Form):
     username = TextField(
         u'Username',
@@ -35,24 +44,24 @@ class RegisterForm(Form):
         u'Repeat password',
         [
             DataRequired(),
-            EqualTo('Password', message='Passwords must match.')
+            EqualTo('password', message='Passwords must match.')
         ]
     )
 
 class ChangePasswordForm(Form):
-    old_password = PasswordField(
+    oldpassword = PasswordField(
         u'Old password',
         [DataRequired(), Length(min=6, max=25)]
     )
-    new_password = PasswordField(
+    newpassword = PasswordField(
         u'New password',
         [DataRequired(), Length(min=6, max=25)]
     )
     confirm = PasswordField(
-        u'Repeat password',
+        u'confirm',
         [
             DataRequired(),
-            EqualTo('New password', message='Passwords must match.')
+            EqualTo('newpassword')
         ]
     )
 
@@ -67,6 +76,5 @@ class UpdateProfileForm(Form):
     )
     email = TextField(
         u'Email',
-        [DataRequired(), Email(message=None), Length(min=6, max=40)]
+        [DataRequired(), Email(message=None)]
     )
-

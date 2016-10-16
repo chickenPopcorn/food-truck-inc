@@ -1,5 +1,5 @@
 import bcrypt
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, ChangePasswordForm, UpdateProfileForm, DeleteForm
 
 class UserDataAccess:
     def __init__(self, users):
@@ -12,13 +12,8 @@ class UserDataAccess:
             login_user = self.users.find_one({
                 'username' : form.username.data,
                 })
-            if login_user and self.check_ps(login_user, form.password.data):
 
-                    '''
-                    bcrypt.hashpw(password.encode('utf-8'), \
-                    login_user['password'].encode('utf-8')) == \
-                    login_user['password'].encode('utf-8'):
-                    '''
+            if login_user and UserDataAccess.check_ps(login_user, form.password.data):
                     status = True
                     message = 'Login successful!'
                     user = UserDataAccess.return_user(login_user)
@@ -28,17 +23,21 @@ class UserDataAccess:
             message = "Invalide form"
         return UserDataAccess.return_output(status, message, user)
 
-    def check_ps(self, login_user, password):
-        return password.encode('utf-8') == login_user['password']
+    @staticmethod
+    def check_ps(login_user, password):
+        return bcrypt.hashpw(password.encode('utf-8'), \
+        login_user["password"].encode('utf-8')) \
+        == login_user["password"].encode('utf-8')
 
     def register(self, requestForm):
         user, status, message = UserDataAccess.init_output()
         form = RegisterForm(requestForm)
+
         if form.validate():
             is_unique, message = self.__is_unique(form.username.data, form.email.data)
             if not is_unique:
-                output['message'] = message
-                return output
+                message = "email or username already registered"
+                return UserDataAccess.return_output(status, message, {})
             else:
                 status = True
                 hashpass = bcrypt.hashpw(form.password.data.encode('utf-8'), bcrypt.gensalt())
@@ -80,7 +79,6 @@ class UserDataAccess:
     @staticmethod
     def return_user(user_info):
         return {
-            'uid': str(user_info["_id"]),
             'username': user_info["username"],
             'lastname': user_info["lastname"],
             'firstname': user_info["firstname"],
@@ -97,37 +95,63 @@ class UserDataAccess:
             }
         }
 
-    def __is_your_email_unique(self, user_id, email):
+    def __is_your_email_unique(self, email):
         if self.users.find_one({'email':email}):
             return False, 'The email has been taken!'
         return True, 'You can use this email!'
 
-    def update_profile(self, username, firstname, lastname, email):
-        status, message = self.__is_your_email_unique(username, email)
-        if status:
-            message = 'You have successfully updated your profile!'
-            self.users.update(
-                {'username': username},
-                {"email": email, "firsname": fistname, "lastname": lastname},
-                { upsert: true }
-            )
+    def update_profile(self, requestForm):
+        user, status, message = UserDataAccess.init_output()
+        form = UpdateProfileForm(requestForm)
+        if form.validate():
+            status, message = self.__is_your_email_unique(form.email.data)
+            if status:
+                message = 'You have successfully updated your profile!'
+                self.users.update(
+                    {'username': username},
+                    {"email": email, "firsname": fistname, "lastname": lastname},
+                    { upsert: True }
+                )
         return UserDataAccess.return_output(status, message, {})
 
-    def change_password(self, username, old_password, new_password):
-        status, message = UserDataAccess.init_output()
-        login_user = self.users.find_one({
-                'username' : form.username.data,
-                })
-        if check_ps(login_user, form.old_password.data):
-            self.users.update(
-                {'_id': login_user['_id']},
-                {"password": form.new_password.data},
-                { upsert: true }
-            )
-            status = True
-            message = 'Your password has been changed!'
+    def change_password(self, requestForm, username):
+        user, status, message = UserDataAccess.init_output()
+        form = ChangePasswordForm(requestForm)
+        if form.validate():
+            login_user = self.users.find_one({
+                'username' : username,
+            })
+            if login_user and UserDataAccess.check_ps(login_user, form.oldpassword.data):
+                self.users.update_one(
+                    {'username': login_user["username"]},
+                    {'$set': {"password":
+                        bcrypt.hashpw(form.newpassword.data.encode('utf-8'), bcrypt.gensalt())
+                    }}
+                )
+                status = True
+                message = 'Your password has been changed!'
+            else:
+                message = 'The old password is NOT correct!'
         else:
-            message = 'The old password is NOT correct!'
+            message = "Invalide form"
+        return UserDataAccess.return_output(status, message, {})
+
+    def delete(self, requestForm):
+        user, status, message = UserDataAccess.init_output()
+        form = DeleteForm(requestForm)
+        if form.validate():
+            login_user = self.users.find_one({
+                'username' : form.username.data,
+            })
+
+            if UserDataAccess.check_ps(login_user, form.password.data):
+                self.users.delete_one(
+                    { 'username': form.username.data}
+                )
+                status = True
+                message = 'Your account has been deleted!'
+        else:
+            message = 'Missing info!'
         return UserDataAccess.return_output(status, message, {})
     '''
 
