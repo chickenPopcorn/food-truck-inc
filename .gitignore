@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# Sys Uploads
+uploads/*
+
+# intelJ
+*idea/
+
 # Distribution / packaging
 .Python
 env/
