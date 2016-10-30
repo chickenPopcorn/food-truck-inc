@@ -25,3 +25,9 @@ class FlaskTestCase(BaseTestCase):
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(filecmp.cmp('uploads/test.jpg', 'static/test.jpg'), True )
+
+        # Clean up
+        try:
+            os.remove('uploads/test.jpg')
+        except OSError:
+            pass
