@@ -9,13 +9,17 @@ class FlaskTestCase(BaseTestCase):
 
     # Ensure login behaves correctly with incorrect credentials
     def test_file_upload(self):
-
-        # login first
-        response = self.client.post(
-            '/login',
-            data=dict(username="testing", password="testing")
+        # logout first
+        response = self.client.get(
+            '/logout'
         )
         self.assertEqual(response.status_code, 200)
+
+        # Remove test file first if exist
+        try:
+            os.remove('uploads/test.jpg')
+        except OSError:
+            pass
 
         # Remove test file first if exist
         try:
@@ -30,8 +34,7 @@ class FlaskTestCase(BaseTestCase):
                 data={'file': (imgStringIO, 'test.jpg')}
             )
 
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(filecmp.cmp('uploads/test.jpg', 'static/test.jpg'), True )
+            self.assertEqual(response.status_code, 403)
 
         # Clean up
         try:
