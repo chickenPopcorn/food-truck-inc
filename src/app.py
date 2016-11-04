@@ -6,7 +6,7 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 import os
 import braintree
-import tinys3
+import boto
 
 
 app = Flask(__name__)
@@ -17,9 +17,15 @@ app.config['MONGO_DBNAME'] = os.environ['MONGO_DBNAME']
 app.config['MONGO_URI'] = os.environ['MONGO_URI']
 # file upload
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
+app.config['ALLOWED_FILE_SIZE'] = 1000000 #1MB limit
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
 app.config['DEBUG'] = True
+
+app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
+app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
+bucketName = 'cuisines'
+
 
 mongo = PyMongo(app)
 
@@ -32,34 +38,57 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
+def allowed_file_size(file):
+    chunk = 10  # chunk size to read per loop iteration; 10 bytes
+    data = None
+    size = 0
+
+    # keep reading until out of data
+    while data != b'':
+        data = file.read(chunk)
+        size += len(data)
+        # return false if the total size of data parsed so far exceeds MAX_FILE_SIZE
+        if size > app.config['ALLOWED_FILE_SIZE']:
+            return False
+    return True
+
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
+    '''
     if not session or 'logged_in' not in session:
         return abort(403)
+    '''
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
-            return redirect(request.url)
+            return abort(400)
         file = request.files['file']
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename == '':
             flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
+            return abort(400)
+        if file and allowed_file(file.filename) and allowed_file_size(file):
             filename = secure_filename(file.filename)
+            # for testing saved locally
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-            f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')
-            conn = tinys3.Connection(os.environ['S3_ACCESS_KEY'], os.environ['S3_SECRET_KEY'], tls=True, endpoint='s3-eu-west-1.amazonaws.com')
-            conn.upload(filename, f, 'cuisines')
+            conn = boto.connect_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'])
+            bucket = conn.get_bucket(bucketName)
+
+            # create our file on s3
+            sml = bucket.new_key('/'.join(['upload-dir', filename]))
+            # save the file contents
+            sml.set_contents_from_string(file.read())
+            # set appropriate ACL
+            sml.set_acl('public-read')
 
             return '''   <!doctype html>
-                        <title>Uploaded a File</title>
-                        <h1>Upload Successful</h1>
+                            <title>Uploaded a File</title>
+                            <h1>Upload Successful</h1>
 
-                        '''
+                            '''
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -69,37 +98,6 @@ def upload_file():
          <input type=submit value=Upload>
     </form>
     '''
-
-'''
-@app.route('/upload/', methods=['GET', 'POST'])
-def upload():
-
-    if not session or 'uid' not in session:
-        return abort(403)
-    else:
-        photo_file = request.files['file']
-        bid = int()
-        if photo_file and allowed_file(photo_file.filename):
-            filename = secure_filename(photo_file.filename)
-            photo_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-            f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')
-            conn = tinys3.Connection(S3_ACCESS_KEY, S3_SECRET_KEY, tls=True, endpoint='s3-us-west-2.amazonaws.com')
-            conn.upload(filename, f, 'cuisines-6998')
-
-            url = S3_BUCKET_URL + filename
-            bda = BikeDataAccess(g.conn)
-            output = bda.add_photo(url, bid)
-
-            return jsonify(output)
-        else:
-            output = {
-                'message': 'Unsupported file format',
-                'status': False
-            }
-
-            return jsonify(output)
-'''
 
 def login_required(f):
     @wraps(f)
