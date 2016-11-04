@@ -9,6 +9,9 @@ __pycache__/
 # Sys Uploads
 uploads/*
 
+# Sys Uploads
+config.py
+
 # intelJ
 *idea/
 
