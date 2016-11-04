@@ -6,13 +6,20 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 import os
 import braintree
-from config import *
 import tinys3
 
 
 app = Flask(__name__)
-app.config.from_object(config['default'])
-config['default'].init_app(app)
+
+app.secret_key = os.environ['SECRET_KEY']
+# mongodb database
+app.config['MONGO_DBNAME'] = os.environ['MONGO_DBNAME']
+app.config['MONGO_URI'] = os.environ['MONGO_URI']
+# file upload
+app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
+app.config['UPLOAD_FOLDER'] = 'uploads/'
+app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
+app.config['DEBUG'] = True
 
 mongo = PyMongo(app)
 
@@ -45,7 +52,7 @@ def upload_file():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
             f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')
-            conn = tinys3.Connection(S3_ACCESS_KEY, S3_SECRET_KEY, tls=True, endpoint='s3-eu-west-1.amazonaws.com')
+            conn = tinys3.Connection(os.environ['S3_ACCESS_KEY'], os.environ['S3_SECRET_KEY'], tls=True, endpoint='s3-eu-west-1.amazonaws.com')
             conn.upload(filename, f, 'cuisines')
 
             return '''   <!doctype html>
