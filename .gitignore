@@ -7,9 +7,6 @@ __pycache__/
 *.so
 
 # Sys Uploads
-uploads/*
-
-# Sys Uploads
 config.py
 
 # intelJ
