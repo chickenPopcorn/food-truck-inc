@@ -4,60 +4,51 @@ from server.data_access.user_data_access import UserDataAccess
 import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
+from os.path import join, dirname
+from dotenv import load_dotenv
 import os
 import braintree
 import boto
 
 
 app = Flask(__name__)
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
-app.secret_key = os.environ['SECRET_KEY']
+app.secret_key = os.environ['APP_SECRET_KEY']
 # mongodb database
 app.config['MONGO_DBNAME'] = os.environ['MONGO_DBNAME']
 app.config['MONGO_URI'] = os.environ['MONGO_URI']
 # file upload
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
-app.config['ALLOWED_FILE_SIZE'] = 1000000 #1MB limit
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
 app.config['DEBUG'] = True
 
 app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
 app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
-bucketName = 'cuisines'
+bucketName = 'vendors-6998'
 
 
 mongo = PyMongo(app)
 
-braintree.Configuration.configure(braintree.Environment.Sandbox,
-                                  merchant_id="2yffqc6bmkqftb94",
-                                  public_key="u6jkwvx3r6hj883x6",
-                                  private_key="17d6d7c7473dc28eef407eb2d2c7abbe")
+braintree.Configuration.configure(
+    os.environ.get('BT_ENVIRONMENT'),
+    os.environ.get('BT_MERCHANT_ID'),
+    os.environ.get('BT_PUBLIC_KEY'),
+    os.environ.get('BT_PRIVATE_KEY')
+)
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
-def allowed_file_size(file):
-    chunk = 10  # chunk size to read per loop iteration; 10 bytes
-    data = None
-    size = 0
-
-    # keep reading until out of data
-    while data != b'':
-        data = file.read(chunk)
-        size += len(data)
-        # return false if the total size of data parsed so far exceeds MAX_FILE_SIZE
-        if size > app.config['ALLOWED_FILE_SIZE']:
-            return False
-    return True
-
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-    '''
+
     if not session or 'logged_in' not in session:
         return abort(403)
-    '''
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -69,21 +60,28 @@ def upload_file():
         if file.filename == '':
             flash('No selected file')
             return abort(400)
-        if file and allowed_file(file.filename) and allowed_file_size(file):
+        if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            path = os.path.join(app.config['UPLOAD_FOLDER'], session['username'])
             # for testing saved locally
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            if not os.path.exists(path):
+                try:
+                    os.makedirs(path)
+                except OSError as exc:  # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
+            file.save(os.path.join(path, filename))
 
+            '''
             conn = boto.connect_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'])
-            bucket = conn.get_bucket(bucketName)
-
+            bucket = conn.get_bucket(bucketName, validate=False)
             # create our file on s3
-            sml = bucket.new_key('/'.join(['upload-dir', filename]))
+            sml = bucket.new_key('/'.join([session['username'], filename]))
             # save the file contents
             sml.set_contents_from_string(file.read())
             # set appropriate ACL
             sml.set_acl('public-read')
-
+            '''
             return '''   <!doctype html>
                             <title>Uploaded a File</title>
                             <h1>Upload Successful</h1>
