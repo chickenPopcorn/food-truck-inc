@@ -38,7 +38,6 @@ def cov():
     except:
         pass
 
-
     cov.html_report(directory=covdir)
     cov.erase()
 

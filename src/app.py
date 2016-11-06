@@ -30,7 +30,6 @@ app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
 app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
 bucketName = 'vendors-6998'
 
-
 mongo = PyMongo(app)
 
 braintree.Configuration.configure(
