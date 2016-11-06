@@ -1,11 +1,12 @@
 import unittest
 import os
+from os.path import join, dirname
 import coverage
 from flask_script import Manager
 from app import app
 import shutil
 
-app.config.from_object('config.DevelopmentConfig')
+app.config.from_object(join(dirname(__file__), 'config.DevelopmentConfig'))
 manager = Manager(app)
 
 @manager.command
