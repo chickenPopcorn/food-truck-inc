@@ -35,7 +35,7 @@ def cov():
     covdir = os.path.join(basedir, 'coverage')
     try:
         shutil.rmtree(covdir)
-    except:
+    except OSError:
         pass
 
     cov.html_report(directory=covdir)
