@@ -4,29 +4,40 @@ from server.data_access.user_data_access import UserDataAccess
 import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
+from os.path import join, dirname
+from dotenv import load_dotenv
 import os
 import braintree
-import tinys3
+import boto
 
 
 app = Flask(__name__)
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
-app.secret_key = os.environ['SECRET_KEY']
+app.secret_key = os.environ['APP_SECRET_KEY']
 # mongodb database
 app.config['MONGO_DBNAME'] = os.environ['MONGO_DBNAME']
 app.config['MONGO_URI'] = os.environ['MONGO_URI']
 # file upload
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
 app.config['DEBUG'] = True
 
+app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
+app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
+bucketName = 'vendors-6998'
+
 mongo = PyMongo(app)
 
-braintree.Configuration.configure(braintree.Environment.Sandbox,
-                                  merchant_id="2yffqc6bmkqftb94",
-                                  public_key="u6jkwvx3r6hj883x6",
-                                  private_key="17d6d7c7473dc28eef407eb2d2c7abbe")
+braintree.Configuration.configure(
+    os.environ.get('BT_ENVIRONMENT'),
+    os.environ.get('BT_MERCHANT_ID'),
+    os.environ.get('BT_PUBLIC_KEY'),
+    os.environ.get('BT_PRIVATE_KEY')
+)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -34,32 +45,47 @@ def allowed_file(filename):
 
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
+
     if not session or 'logged_in' not in session:
         return abort(403)
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
-            return redirect(request.url)
+            return abort(400)
         file = request.files['file']
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename == '':
             flash('No selected file')
-            return redirect(request.url)
+            return abort(400)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            path = os.path.join(app.config['UPLOAD_FOLDER'], session['username'])
+            # for testing saved locally
+            if not os.path.exists(path):
+                try:
+                    os.makedirs(path)
+                except OSError as exc:  # Guard against race condition
+                    if exc.errno != errno.EEXIST:
+                        raise
+            file.save(os.path.join(path, filename))
 
-            f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')
-            conn = tinys3.Connection(os.environ['S3_ACCESS_KEY'], os.environ['S3_SECRET_KEY'], tls=True, endpoint='s3-eu-west-1.amazonaws.com')
-            conn.upload(filename, f, 'cuisines')
-
+            '''
+            conn = boto.connect_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'])
+            bucket = conn.get_bucket(bucketName, validate=False)
+            # create our file on s3
+            sml = bucket.new_key('/'.join([session['username'], filename]))
+            # save the file contents
+            sml.set_contents_from_string(file.read())
+            # set appropriate ACL
+            sml.set_acl('public-read')
+            '''
             return '''   <!doctype html>
-                        <title>Uploaded a File</title>
-                        <h1>Upload Successful</h1>
+                            <title>Uploaded a File</title>
+                            <h1>Upload Successful</h1>
 
-                        '''
+                            '''
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -69,37 +95,6 @@ def upload_file():
          <input type=submit value=Upload>
     </form>
     '''
-
-'''
-@app.route('/upload/', methods=['GET', 'POST'])
-def upload():
-
-    if not session or 'uid' not in session:
-        return abort(403)
-    else:
-        photo_file = request.files['file']
-        bid = int()
-        if photo_file and allowed_file(photo_file.filename):
-            filename = secure_filename(photo_file.filename)
-            photo_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-            f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'rb')
-            conn = tinys3.Connection(S3_ACCESS_KEY, S3_SECRET_KEY, tls=True, endpoint='s3-us-west-2.amazonaws.com')
-            conn.upload(filename, f, 'cuisines-6998')
-
-            url = S3_BUCKET_URL + filename
-            bda = BikeDataAccess(g.conn)
-            output = bda.add_photo(url, bid)
-
-            return jsonify(output)
-        else:
-            output = {
-                'message': 'Unsupported file format',
-                'status': False
-            }
-
-            return jsonify(output)
-'''
 
 def login_required(f):
     @wraps(f)
@@ -160,11 +155,5 @@ def updateProfile():
     output = uda.update_profile(request.form)
     return jsonify(output)
 
-
-
-
-
-
-
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0")

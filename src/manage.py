@@ -3,6 +3,7 @@ import os
 import coverage
 from flask_script import Manager
 from app import app
+import shutil
 
 manager = Manager(app)
 
@@ -15,19 +16,28 @@ def test():
 @manager.command
 def cov():
     """Runs the unit tests with coverage."""
-    cov = coverage.coverage(branch=True, omit=[
+    cov = coverage.coverage(branch=True,
+                            include='*', omit=[
                                             '*/site-packages/*',
-                                            '*test*.py'
+                                            '*test*.py',
+                                            '*/python2.7/*'
                                             ])
     cov.start()
     tests = unittest.TestLoader().discover('tests')
-    unittest.TextTestRunner(verbosity=3).run(tests)
+    unittest.TextTestRunner(verbosity=5).run(tests)
     cov.stop()
     cov.save()
     print 'Coverage Summary:'
+
     cov.report()
     basedir = os.path.abspath(os.path.dirname(__file__))
+
     covdir = os.path.join(basedir, 'coverage')
+    try:
+        shutil.rmtree(covdir)
+    except OSError:
+        pass
+
     cov.html_report(directory=covdir)
     cov.erase()
 

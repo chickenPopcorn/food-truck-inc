@@ -21,12 +21,6 @@ class FlaskTestCase(BaseTestCase):
         except OSError:
             pass
 
-        # Remove test file first if exist
-        try:
-            os.remove('uploads/test.jpg')
-        except OSError:
-            pass
-
         with open('static/test.jpg') as test:
             imgStringIO = StringIO(test.read())
             response = self.client.post(

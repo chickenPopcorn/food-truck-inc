@@ -1,0 +1,45 @@
+{
+  "name": “Cloud Computing Group Project“,
+  "description": “Group Project for Food Truck“,
+  "repository": "https://github.com/chickenPopcorn/cloudComputingProject",
+  "env": {
+    "BT_ENVIRONMENT": {
+      "description": "Run against Braintree sandbox environment",
+      "required": true,
+      "value": "sandbox"
+    },
+    "BT_MERCHANT_ID": {
+      "description": "Your Braintree Merchant ID",
+      "required": true
+    },
+    "BT_PUBLIC_KEY": {
+      "description": "Your Braintree Public Key",
+      "required": true
+    },
+    "BT_PRIVATE_KEY": {
+      "description": "Your Braintree Private Key",
+      "required": true
+    },
+    "APP_SECRET_KEY": {
+      "description": "A unique secret key; a long, random set of characters",
+      "required": true,
+      "generator": "secret"
+    },
+    "S3_ACCESS_KEY": {
+      "description": “AWS S3 access key”,
+      "required": true,	
+    },
+    "S3_SECRET_KEY": {
+      "description": "AWS S3 secret key",
+      "required": true,
+    },
+    "MONGO_DBNAME": {
+      "description": “mongoDB name”,
+      "required": true,
+    },
+    "MONGO_URI": {
+      "description": “mongoDB URI”,
+      "required": true,
+    }
+  }
+}

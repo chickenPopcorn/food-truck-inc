@@ -4,6 +4,7 @@ from app import app
 from blueprint_test_case import BaseTestCase
 from StringIO import StringIO
 import filecmp
+import shutil
 
 class FlaskTestCase(BaseTestCase):
 
@@ -19,22 +20,20 @@ class FlaskTestCase(BaseTestCase):
 
         # Remove test file first if exist
         try:
-            os.remove('uploads/test.jpg')
+            os.remove('uploads/testing/test.jpg')
         except OSError:
             pass
 
-        with open('static/test.jpg') as test:
-            imgStringIO = StringIO(test.read())
+        with open('static/test.jpg', "rb") as test:
             response = self.client.post(
                 '/upload/',
-                data={'file': (imgStringIO, 'test.jpg')}
+                data={'file': (StringIO(test.read()), 'test.jpg')}
             )
-
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(filecmp.cmp('uploads/test.jpg', 'static/test.jpg'), True )
+            self.assertEqual(filecmp.cmp('uploads/testing/test.jpg', 'static/test.jpg'), True )
 
         # Clean up
         try:
-            os.remove('uploads/test.jpg')
+            shutil.rmtree('uploads/testing')
         except OSError:
             pass
