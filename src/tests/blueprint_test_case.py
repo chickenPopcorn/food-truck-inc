@@ -7,5 +7,5 @@ class BaseTestCase(TestCase):
     """A base test case."""
 
     def create_app(self):
-        app.config.from_object('server.config.TestConfig')
+        app.config.from_object('config.TestConfig')
         return app

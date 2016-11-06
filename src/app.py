@@ -156,11 +156,5 @@ def updateProfile():
     output = uda.update_profile(request.form)
     return jsonify(output)
 
-
-
-
-
-
-
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0")
