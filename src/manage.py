@@ -20,7 +20,7 @@ def cov():
                             include='*', omit=[
                                             '*/site-packages/*',
                                             '*test*.py',
-                                            '*/Python.framework/Versions/*'
+                                            '*/python2.7/*'
                                             ])
     cov.start()
     tests = unittest.TestLoader().discover('tests')
