@@ -1,5 +1,6 @@
-from wtforms import Form, BooleanField, TextField, PasswordField
-from wtforms.validators import DataRequired, Email, Length, EqualTo
+from wtforms import Form, BooleanField, TextField, PasswordField, IntegerField, FileField, FloatField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange
+import imghdr
 
 class LoginForm(Form):
     username = TextField(
@@ -25,11 +26,11 @@ class RegisterForm(Form):
         [DataRequired(), Length(min=4, max=25)]
     )
     lastname = TextField(
-        u'Lastname',
+        u'Last Name',
         [DataRequired()]
     )
     firstname = TextField(
-        u'Firstname',
+        u'First Name',
         [DataRequired()]
     )
     email = TextField(
@@ -41,7 +42,7 @@ class RegisterForm(Form):
         [DataRequired(), Length(min=6, max=25)]
     )
     confirm = PasswordField(
-        u'Repeat password',
+        u'Repeat Password',
         [
             DataRequired(),
             EqualTo('password', message='Passwords must match.')
@@ -58,7 +59,7 @@ class ChangePasswordForm(Form):
         [DataRequired(), Length(min=6, max=25)]
     )
     confirm = PasswordField(
-        u'confirm',
+        u'Confirm',
         [
             DataRequired(),
             EqualTo('newpassword')
@@ -67,14 +68,57 @@ class ChangePasswordForm(Form):
 
 class UpdateProfileForm(Form):
     lastname = TextField(
-        u'Lastname',
+        u'Last Name',
         [DataRequired()]
     )
     firstname = TextField(
-        u'Firstname',
+        u'First Name',
         [DataRequired()]
     )
     email = TextField(
         u'Email',
-        [DataRequired(), Email(message=None)]
+        [DataRequired(), Email(message="Incorrect email format")]
+    )
+
+class VendorAddMenuItem(Form):
+    itemname = TextField(
+        u'Item Name',
+        [DataRequired()]
+    )
+
+    price = FloatField(
+        u'Price',
+        [DataRequired(), NumberRange(min=0, message="Price must be non-negative")]
+    )
+
+    '''
+    img = FileField(
+        u'Image',
+        [DataRequired(), ImageFileRequired()]
+    )
+    '''
+
+class ImageFileRequired(object):
+    """
+    Validates that an uploaded file from a flask_wtf FileField is, in fact an
+    image.  Better than checking the file extension, examines the header of
+    the image using Python's built in imghdr module.
+    """
+
+    def __init__(self, message=None):
+        self.message = message
+
+    def __call__(self, form, field):
+        ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+        if field.data is None:
+            message = self.message or 'An image file is required'
+            raise validators.StopValidation(message)
+        if imghdr.what('unused', field.data.read()) not in ALLOWED_EXTENSIONS:
+            raise ValidationError("image file type not supported")
+        field.data.seek(0)
+
+class VendorDeleteMenuItem(Form):
+    itemname = TextField(
+        u'Item Name',
+        [DataRequired()]
     )

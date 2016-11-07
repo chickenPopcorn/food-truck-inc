@@ -5,11 +5,28 @@ from blueprint_test_case import BaseTestCase
 
 class FlaskTestCase(BaseTestCase):
 
-    # Ensure login behaves correctly with incorrect credentials
-    def test_incorrect_login(self):
+    # Ensure login behaves correctly with correct credentials
+    def test_correct_customer_login(self):
         # login as that user
         response = self.client.post(
-            '/login',
+            '/login/vendor',
+            data = dict(username="testing", password="testing")
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Login successful!', response.data)
+
+        # then logout
+        response = self.client.get(
+            '/logout'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(u'"You logged out!', response.data)
+
+    # Ensure login behaves correctly with correct credentials
+    def test_correct_vendor_login(self):
+        # login as that user
+        response = self.client.post(
+            '/login/customer',
             data = dict(username="testing", password="testing")
         )
         self.assertEqual(response.status_code, 200)

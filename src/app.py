@@ -1,5 +1,6 @@
 from flask import Flask, request, session, jsonify, url_for, redirect, abort, flash, render_template
 from flask_pymongo import PyMongo
+from server.data_access.vendor_data_access import VendorDataAccess
 from server.data_access.user_data_access import UserDataAccess
 import bcrypt
 from functools import wraps
@@ -50,6 +51,14 @@ TRANSACTION_SUCCESS_STATUSES = [
 ]
 
 
+def get_mongodb_collection(database, role):
+    if role == "customer":
+        return UserDataAccess(database.db.customerLogin)
+    elif role == "vendor":
+        return UserDataAccess(database.db.vendorLogin)
+    else:
+        return null
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
@@ -57,7 +66,7 @@ def allowed_file(filename):
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
 
-    if not session or 'logged_in' not in session:
+    if not session or session['logged_in'] != "vendor":
         return abort(403)
     if request.method == 'POST':
         # check if the post request has the file part
@@ -121,13 +130,15 @@ def login_required(f):
 def hello_world():
     return 'Hello, World!'
 
-# log in API post only
-@app.route('/login', methods=['POST'])
-def login():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+# user info management routes
+@app.route('/login/<role>', methods=['POST'])
+def login(role):
+    uda = get_mongodb_collection(mongo, role)
+    if not uda:
+        return abort(403)
     output = uda.authorize(request.form)
     if output['status']:
-        session['logged_in'] = True
+        session['logged_in'] = role
         session['username'] = output['result']['user']['username']
     return jsonify(output)
 
@@ -139,32 +150,72 @@ def logout():
     return jsonify({"status": True, "message": "You logged out!"})
 
 # register in API post only
-@app.route('/register', methods=['POST'])
-def register():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+@app.route('/register/<role>', methods=['POST'])
+def register(role):
+    uda = get_mongodb_collection(mongo, role)
+    if not uda:
+        return abort(403)
     output = uda.register(request.form)
     return jsonify(output)
 
 # testing use
 @app.route('/delete', methods=['POST'])
+@login_required
 def delete_user():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.delete(request.form)
     return jsonify(output)
 
 @app.route('/changePassword', methods=['POST'])
 @login_required
 def change_password():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.change_password(request.form, session['username'])
     return jsonify(output)
 
 @app.route('/updateProfile', methods=['POST'])
 @login_required
 def update_profile():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.update_profile(request.form)
     return jsonify(output)
+
+
+
+
+# vendor upload info
+@app.route('/addMenuItem', methods=['POST'])
+@login_required
+def add_menu_item():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    vda = VendorDataAccess(mongo.db.vendors, session['username'])
+    output = vda.add_menu_item(request.form)
+    return jsonify(output)
+
+# vendor upload info
+@app.route('/deleteMenuItem', methods=['POST'])
+# @login_required
+def delete_menu_item():
+    '''
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    '''
+    vda = VendorDataAccess(mongo.db.vendors, "testing")
+    output = vda.delete_menu_item(request.form)
+    return jsonify(output)
+
+
+
+
+
+
 
 
 # pmt routes
@@ -176,7 +227,6 @@ def new_checkout():
 @app.route('/checkouts/<transaction_id>', methods=['GET'])
 def show_checkout(transaction_id):
     transaction = braintree.Transaction.find(transaction_id)
-    result = {}
     if transaction.status in TRANSACTION_SUCCESS_STATUSES:
         result = {
             'header': 'Sweet Success!',
