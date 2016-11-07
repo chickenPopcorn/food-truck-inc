@@ -19,7 +19,7 @@ def cov():
     cov = coverage.coverage(branch=True,
                             include='*', omit=[
                                             '*/site-packages/*',
-                                            '*test*.py',
+                                            '*/tests/*',
                                             '*/python2.7/*'
                                             ])
     cov.start()

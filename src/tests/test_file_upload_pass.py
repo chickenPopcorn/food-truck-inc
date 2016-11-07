@@ -13,7 +13,7 @@ class FlaskTestCase(BaseTestCase):
 
         # login first
         response = self.client.post(
-            '/login',
+            '/login/vendor',
             data=dict(username="testing", password="testing")
         )
         self.assertEqual(response.status_code, 200)

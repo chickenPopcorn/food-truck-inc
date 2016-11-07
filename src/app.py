@@ -50,6 +50,14 @@ TRANSACTION_SUCCESS_STATUSES = [
 ]
 
 
+def get_mongodb_collection(database, role):
+    if role == "customer":
+        return UserDataAccess(database.db.customerLogin)
+    elif role == "vendor":
+        return UserDataAccess(database.db.vendorLogin)
+    else:
+        return null
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
@@ -57,7 +65,7 @@ def allowed_file(filename):
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
 
-    if not session or 'logged_in' not in session:
+    if not session or session['logged_in'] != "vendor":
         return abort(403)
     if request.method == 'POST':
         # check if the post request has the file part
@@ -121,13 +129,15 @@ def login_required(f):
 def hello_world():
     return 'Hello, World!'
 
-# log in API post only
-@app.route('/login', methods=['POST'])
-def login():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+# user info management routes
+@app.route('/login/<role>', methods=['POST'])
+def login(role):
+    uda = get_mongodb_collection(mongo, role)
+    if not uda:
+        return abort(403)
     output = uda.authorize(request.form)
     if output['status']:
-        session['logged_in'] = True
+        session['logged_in'] = role
         session['username'] = output['result']['user']['username']
     return jsonify(output)
 
@@ -139,30 +149,39 @@ def logout():
     return jsonify({"status": True, "message": "You logged out!"})
 
 # register in API post only
-@app.route('/register', methods=['POST'])
-def register():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+@app.route('/register/<role>', methods=['POST'])
+def register(role):
+    uda = get_mongodb_collection(mongo, role)
+    if not uda:
+        return abort(403)
     output = uda.register(request.form)
     return jsonify(output)
 
 # testing use
 @app.route('/delete', methods=['POST'])
+@login_required
 def delete_user():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.delete(request.form)
     return jsonify(output)
 
 @app.route('/changePassword', methods=['POST'])
 @login_required
 def change_password():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.change_password(request.form, session['username'])
     return jsonify(output)
 
 @app.route('/updateProfile', methods=['POST'])
 @login_required
-def update_profile():
-    uda = UserDataAccess(mongo.db.customeruserlogin)
+def update_profile(role):
+    uda = get_mongodb_collection(mongo, session['logged_in'])
+    if not uda:
+        return abort(403)
     output = uda.update_profile(request.form)
     return jsonify(output)
 
