@@ -94,3 +94,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# iOS Pods
+Pods

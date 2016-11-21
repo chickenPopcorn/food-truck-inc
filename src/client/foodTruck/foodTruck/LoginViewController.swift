@@ -53,6 +53,7 @@ class LoginViewController: UIViewController {
                             prefs.set(true, forKey: "ISLOGGEDIN")
                             prefs.synchronize()
                             self.dismiss(animated: true, completion: nil)
+                            self.performSegue(withIdentifier: "goto_map", sender: nil)
                         }
                         
                     }else{
