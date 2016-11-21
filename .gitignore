@@ -94,3 +94,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# OS file
+*~
+.DS_Store
+
+# Amazon S3 upload
+uploads/
