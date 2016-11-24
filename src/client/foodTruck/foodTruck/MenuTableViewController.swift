@@ -37,6 +37,10 @@ class MenuTableViewController: UITableViewController {
         menu += [item1, item2, item3]
     }
     
+    @IBAction func order(_ sender: Any) {
+        
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -67,7 +71,7 @@ class MenuTableViewController: UITableViewController {
         
         cell.nameLabel.text = menuItem.name
         cell.photoImageView.image = menuItem.photo
-        cell.priceLabel.text = String(menuItem.price)
+        cell.priceLabel.text = "$"+String(menuItem.price)
         
         return cell
     }
