@@ -12,31 +12,49 @@ import GoogleMaps
 
 var serverDomain = "http://localhost:5000"
 
-class ViewController: UIViewController{
+class ViewController: UIViewController, GMSMapViewDelegate {
     
     @IBOutlet weak var gmsMapView: GMSMapView!
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-        // Create a GMSCameraPosition that tells the map to display the
-        // coordinate -33.86,151.20 at zoom level 6.
-        let camera = GMSCameraPosition.camera(withLatitude: 40.809986, longitude: -73.962635, zoom: 17.0)
-        let mapView = GMSMapView.map(withFrame: CGRect.zero, camera: camera)
+    
+    override func loadView() {
+        let camera = GMSCameraPosition.camera(withLatitude: 1.285,
+                                                          longitude:103.848,
+                                                          zoom:12)
+        let mapView = GMSMapView.map(withFrame: .zero, camera: camera)
         mapView.isMyLocationEnabled = true
-        view = mapView
+        mapView.settings.myLocationButton = true
         
-        // Creates a marker in the center of the map.
         let marker = GMSMarker()
-        marker.position = CLLocationCoordinate2D(latitude:40.809986, longitude: -73.962635)
+        marker.position = CLLocationCoordinate2D(latitude:1.28683043874784, longitude: 103.845024481416)
         marker.title = "Uncle Luoyang"
         marker.snippet = "Food Truck"
         marker.map = mapView
+        
+        mapView.delegate = self
+        self.view = mapView
     }
     
+    // MARK: GMSMapViewDelegate
+    
+    func mapView(_ mapView: GMSMapView, didTapAt coordinate: CLLocationCoordinate2D) {
+        print("You tapped at \(coordinate.latitude), \(coordinate.longitude)")
+    }
+    
+
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    
+    func mapView(_ mapView: GMSMapView, didTapInfoWindowOf marker: GMSMarker) {
+        self.dismiss(animated: true, completion: nil)
+        self.performSegue(withIdentifier: "goto_menu", sender: nil)
+    }
+    
+    private func mapView(mapView: GMSMapView, didTapAtCoordinate coordinate: CLLocationCoordinate2D) {
+        print("You tapped at \(coordinate.latitude), \(coordinate.longitude)")
     }
     
 }

@@ -12,6 +12,10 @@ class MenuTableViewController: UITableViewController {
     
     var menu = [MenuItem]()
     
+    @IBAction func backToMap(_ sender: Any) {
+        self.dismiss(animated: true, completion: nil)
+        self.performSegue(withIdentifier: "gobackto_map", sender: nil)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
