@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 import os
 import braintree
 import boto
-
+import boto.s3
+from boto.s3.key import Key
 
 app = Flask(__name__)
 dotenv_path = join(dirname(__file__), '.env')
@@ -59,15 +60,61 @@ def get_mongodb_collection(database, role):
     else:
         return null
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
+
+def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, callback=None, md5=None, reduced_redundancy=False, content_type=None):
+    """
+    Uploads the given file to the AWS S3
+    bucket and key specified.
+
+    callback is a function of the form:
+
+    def callback(complete, total)
+
+    The callback should accept two integer parameters,
+    the first representing the number of bytes that
+    have been successfully transmitted to S3 and the
+    second representing the size of the to be transmitted
+    object.
+
+    Returns boolean indicating success/failure of upload.
+    """
+    try:
+        size = os.fstat(file.fileno()).st_size
+    except:
+        # Not all file objects implement fileno(),
+        # so we fall back on this
+        file.seek(0, os.SEEK_END)
+        size = file.tell()
+
+    conn = boto.connect_s3(aws_access_key_id, aws_secret_access_key)
+    bucket = conn.get_bucket(bucket, validate=True)
+    k = Key(bucket)
+    k.key = key
+    if content_type:
+        k.set_metadata('Content-Type', content_type)
+    sent = k.set_contents_from_file(file, cb=callback, md5=md5, reduced_redundancy=reduced_redundancy, rewind=True)
+    # set appropriate ACL
+    k.set_acl('public-read')
+
+    # Rewind for later use
+    file.seek(0)
+
+    if sent == size:
+        return True
+    return False
+
+
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-
     if not session or session['logged_in'] != "vendor":
         return abort(403)
+    #username = "tianci"
+    username = session['username']
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -81,7 +128,7 @@ def upload_file():
             return abort(400)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            path = os.path.join(app.config['UPLOAD_FOLDER'], session['username'])
+            path = os.path.join(app.config['UPLOAD_FOLDER'], username)
             # for testing saved locally
             if not os.path.exists(path):
                 try:
@@ -91,16 +138,15 @@ def upload_file():
                         raise
             file.save(os.path.join(path, filename))
 
-            '''
-            conn = boto.connect_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'])
-            bucket = conn.get_bucket(bucketName, validate=False)
-            # create our file on s3
-            sml = bucket.new_key('/'.join([session['username'], filename]))
-            # save the file contents
-            sml.set_contents_from_string(file.read())
-            # set appropriate ACL
-            sml.set_acl('public-read')
-            '''
+            file = open(os.path.join(path, filename), 'r+')
+            key = '/'.join([username, filename])
+
+            if upload_to_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'], file, bucketName, key):
+                print 'It worked!'
+            else:
+                print 'The upload failed...'
+            file.close()
+
             return '''   <!doctype html>
                             <title>Uploaded a File</title>
                             <h1>Upload Successful</h1>
