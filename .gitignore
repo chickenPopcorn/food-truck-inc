@@ -95,9 +95,14 @@ ENV/
 # Rope project settings
 .ropeproject
 
+
 # OS file
 *~
 .DS_Store
 
+# iOS Pods
+Pods
+
 # Amazon S3 upload
 uploads/
+
