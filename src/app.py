@@ -12,6 +12,9 @@ import braintree
 import boto
 import boto.s3
 from boto.s3.key import Key
+from elastic.es import ESearch
+import datetime
+
 
 app = Flask(__name__)
 dotenv_path = join(dirname(__file__), '.env')
@@ -51,6 +54,9 @@ TRANSACTION_SUCCESS_STATUSES = [
     braintree.Transaction.Status.SubmittedForSettlement
 ]
 
+ES = ESearch()
+INDEX_FOODTRUCK = 'test'
+
 
 def get_mongodb_collection(database, role):
     if role == "customer":
@@ -70,17 +76,6 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
     """
     Uploads the given file to the AWS S3
     bucket and key specified.
-
-    callback is a function of the form:
-
-    def callback(complete, total)
-
-    The callback should accept two integer parameters,
-    the first representing the number of bytes that
-    have been successfully transmitted to S3 and the
-    second representing the size of the to be transmitted
-    object.
-
     Returns boolean indicating success/failure of upload.
     """
     try:
@@ -171,10 +166,12 @@ def login_required(f):
             return jsonify({"status": True})
     return wrap
 
+
 # testing route
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
+
 
 # user info management routes
 @app.route('/login/<role>', methods=['POST'])
@@ -188,12 +185,14 @@ def login(role):
         session['username'] = output['result']['user']['username']
     return jsonify(output)
 
+
 @app.route('/logout', methods=['GET'])
 @login_required
 def logout():
     session.pop('logged_in', None)
     session.pop('username', None)
     return jsonify({"status": True, "message": "You logged out!"})
+
 
 # register in API post only
 @app.route('/register/<role>', methods=['POST'])
@@ -203,6 +202,7 @@ def register(role):
         return abort(403)
     output = uda.register(request.form)
     return jsonify(output)
+
 
 # testing use
 @app.route('/delete', methods=['POST'])
@@ -214,6 +214,7 @@ def delete_user():
     output = uda.delete(request.form)
     return jsonify(output)
 
+
 @app.route('/changePassword', methods=['POST'])
 @login_required
 def change_password():
@@ -222,6 +223,7 @@ def change_password():
         return abort(403)
     output = uda.change_password(request.form, session['username'])
     return jsonify(output)
+
 
 @app.route('/updateProfile', methods=['POST'])
 @login_required
@@ -233,8 +235,6 @@ def update_profile():
     return jsonify(output)
 
 
-
-
 # vendor upload info
 @app.route('/addMenuItem', methods=['POST'])
 @login_required
@@ -244,6 +244,7 @@ def add_menu_item():
     vda = VendorDataAccess(mongo.db.vendors, session['username'])
     output = vda.add_menu_item(request.form)
     return jsonify(output)
+
 
 # vendor upload info
 @app.route('/deleteMenuItem', methods=['POST'])
@@ -258,17 +259,12 @@ def delete_menu_item():
     return jsonify(output)
 
 
-
-
-
-
-
-
 # pmt routes
 @app.route('/checkouts/new', methods=['GET'])
 def new_checkout():
     client_token = braintree.ClientToken.generate()
     return render_template('checkouts/new.html', client_token=client_token)
+
 
 @app.route('/checkouts/<transaction_id>', methods=['GET'])
 def show_checkout(transaction_id):
@@ -288,6 +284,7 @@ def show_checkout(transaction_id):
 
     return render_template('checkouts/show.html', transaction=transaction, result=result)
 
+
 @app.route('/checkouts', methods=['POST'])
 def create_checkout():
     result = braintree.Transaction.sale({
@@ -299,14 +296,51 @@ def create_checkout():
     })
 
     if result.is_success or result.transaction:
-        return redirect(url_for('show_checkout',transaction_id=result.transaction.id))
+        return redirect(url_for('show_checkout', transaction_id=result.transaction.id))
     else:
         for x in result.errors.deep_errors: flash('Error: %s: %s' % (x.code, x.message))
         return redirect(url_for('new_checkout'))
 
 
+# elastic update
+@app.route('/create_index/', methods=['GET'])
+def create_index():
+    return ESearch.create_index(ES, INDEX_FOODTRUCK)
 
+
+@app.route('/update/geo/', methods=['GET'])
+def add_foodtruck():
+    body = {
+        "text": "testing with geo update",
+        "created": datetime.datetime.now(),
+        "geo": {
+            "lat": 40.806709,
+            "lon": -73.966359
+        }
+    }
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, 'tweets', body))
+
+
+# elastic search
+@app.route('/search/content/', methods=['GET'])
+def context_all():
+    return jsonify(ESearch.get_all(ES, INDEX_FOODTRUCK))
+
+
+@app.route('/search/content/<key_word>', methods=['GET'])
+def context(key_word):
+    return jsonify(ESearch.search_content(ES, INDEX_FOODTRUCK, key_word))
+
+
+@app.route('/search/id/<index_id>', methods=['GET'])
+def search_id(index_id):
+    return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, 'tweet', int(index_id)))
+
+# 40.806709, -73.966359
+@app.route('/search/geo/<lat>/<lon>/', methods=['GET'])
+def search_geo(lat, lon):
+    return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), 5))
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=5000)
