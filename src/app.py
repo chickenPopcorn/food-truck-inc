@@ -55,7 +55,7 @@ TRANSACTION_SUCCESS_STATUSES = [
 ]
 
 ES = ESearch()
-INDEX_FOODTRUCK = 'test'
+INDEX_FOODTRUCK = 'test-index'
 
 
 def get_mongodb_collection(database, role):
@@ -311,14 +311,17 @@ def create_index():
 @app.route('/update/geo/', methods=['GET'])
 def add_foodtruck():
     body = {
-        "text": "testing with geo update",
-        "created": datetime.datetime.now(),
+        "user_name": "uncleluoyang",
+        "store_name": "Uncle Luo Yang",
+        "tag": "Chinese",
+        "start_time": datetime.datetime.now(),
+        "close_time": datetime.datetime.now(),
         "geo": {
             "lat": 40.806709,
             "lon": -73.966359
         }
     }
-    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, 'tweets', body))
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, '1', body))
 
 
 # elastic search
@@ -339,7 +342,7 @@ def search_id(index_id):
 # 40.806709, -73.966359
 @app.route('/search/geo/<lat>/<lon>/', methods=['GET'])
 def search_geo(lat, lon):
-    return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), 5))
+    return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), 100))
 
 
 if __name__ == '__main__':
