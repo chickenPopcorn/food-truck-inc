@@ -8,7 +8,7 @@ import sys
 class ESearch:
     def __init__(self):
         config = ConfigParser.ConfigParser()
-        config.readfp(open("./config/default.cfg"))
+        config.readfp(open("/home/ubuntu/cloudComputingProject/src/config/default.cfg"))
 
         access_key = config.get("AWS", "accessKeyId")
         secret_key = config.get("AWS", "secretAccessKey")
