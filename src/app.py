@@ -55,7 +55,7 @@ TRANSACTION_SUCCESS_STATUSES = [
 ]
 
 ES = ESearch()
-INDEX_FOODTRUCK = 'test'
+INDEX_FOODTRUCK = 'test-index'
 
 
 def get_mongodb_collection(database, role):
@@ -313,12 +313,35 @@ def add_foodtruck():
     body = {
         "text": "testing with geo update",
         "created": datetime.datetime.now(),
+        "user_name": "uncleluoyang",
+        "store_name": "Uncle Luo Yang",
+        "tag": "Chinese",
+        "start_time": datetime.datetime.now(),
+        "close_time": datetime.datetime.now(),
         "geo": {
             "lat": 40.806709,
             "lon": -73.966359
         }
     }
-    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, 'tweets', body))
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, '1', body))
+
+
+@app.route('/update/geo/<lat>/<lon>', methods=['GET'])
+def update_geo():
+    body = {
+        "text": "testing with geo update",
+        "created": datetime.datetime.now(),
+        "user_name": "uncleluoyang",
+        "store_name": "Uncle Luo Yang",
+        "tag": "Chinese",
+        "start_time": datetime.datetime.now(),
+        "close_time": datetime.datetime.now(),
+        "geo": {
+            "lat": 40.806709,
+            "lon": -73.966359
+        }
+    }
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, '1', body))
 
 
 # elastic search
@@ -336,11 +359,11 @@ def context(key_word):
 def search_id(index_id):
     return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, 'tweet', int(index_id)))
 
-# 40.806709, -73.966359
+
 @app.route('/search/geo/<lat>/<lon>/', methods=['GET'])
 def search_geo(lat, lon):
-    return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), 5))
+    return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), float(1000)))
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5001)
