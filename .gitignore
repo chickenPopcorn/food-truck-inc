@@ -105,4 +105,6 @@ Pods
 
 # Amazon S3 upload
 uploads/
+config/
+*.cfg
 
