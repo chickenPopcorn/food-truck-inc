@@ -15,6 +15,10 @@ from boto.s3.key import Key
 from elastic.es import ESearch
 from datetime import datetime
 import pytz
+from server.data_access.email_verification import generate_confirmation_token
+from server.data_access.email_verification import confirm_token
+from flask_mail import Mail, Message
+
 
 
 app = Flask(__name__)
@@ -22,9 +26,11 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 app.secret_key = os.environ['APP_SECRET_KEY']
+
 # mongodb database
 app.config['MONGO_DBNAME'] = os.environ['MONGO_DBNAME']
 app.config['MONGO_URI'] = os.environ['MONGO_URI']
+
 # file upload
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -32,6 +38,16 @@ app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
 app.config['DEBUG'] = True
 
+# AWS SES
+app.config['MAIL_SERVER']="email-smtp.us-east-1.amazonaws.com"
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ['AWS_USER']
+app.config['MAIL_PASSWORD'] = os.environ['AWS_PS']
+app.config['MAIL_DEFAULT_SENDER'] = "rxie25@gmail.com"
+mail = Mail(app)
+
+# AWS S3
 app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
 app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
 bucketName = 'vendors-6998'
@@ -203,6 +219,14 @@ def register(role):
     if not uda:
         return abort(403)
     output = uda.register(request.form)
+    print output
+    if output['status'] and output["result"]["user"]["email"]:
+        token = generate_confirmation_token(output["result"]["user"]["email"], app.secret_key)
+        msg = Message("foodTruck email verification", sender="rxie25@gmail.com", recipients=[output["result"]["user"]["email"]],
+                      html='<b> Click for following link to verify your email  <a href="localhost:5000/confirm/'+token+'"> click here</a> </b>')
+        #send
+        print "prepare to send email"
+        mail.send(msg)
     return jsonify(output)
 
 
@@ -404,6 +428,12 @@ def search_id(index_id):
 def search_geo(lat, lon):
     return jsonify(ESearch.search_geo(ES, INDEX_FOODTRUCK, float(lat), float(lon), float(1000)))
 
+
+# delpoy and test this
+@app.route('/confirm/<token>', methods=['GET'])
+def confirm_email(token):
+    email = confirm_token(token, app.secret_key)
+    return "email verified"
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5001)
