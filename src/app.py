@@ -13,7 +13,8 @@ import boto
 import boto.s3
 from boto.s3.key import Key
 from elastic.es import ESearch
-import datetime
+from datetime import datetime
+import pytz
 
 
 app = Flask(__name__)
@@ -56,6 +57,7 @@ TRANSACTION_SUCCESS_STATUSES = [
 
 ES = ESearch()
 INDEX_FOODTRUCK = 'test-index'
+INDEX_TYPE = 'tweets'
 
 
 def get_mongodb_collection(database, role):
@@ -308,40 +310,78 @@ def create_index():
     return ESearch.create_index(ES, INDEX_FOODTRUCK)
 
 
-@app.route('/update/geo/', methods=['GET'])
-def add_foodtruck():
+@app.route('/add_new', methods=['POST'])
+def add_new():
+    local = pytz.timezone("America/New_York")
+    naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
+    local_dt_start = local.localize(naive_start, is_dst=None)
+    utc_dt_start = local_dt_start.astimezone(pytz.utc)
+
+    naive_close = datetime.strptime(request.json["close_time"], '%b %d %Y %H:%M')
+    local_dt_close = local.localize(naive_close, is_dst=None)
+    utc_dt_close = local_dt_close.astimezone(pytz.utc)
+
     body = {
-        "text": "testing with geo update",
-        "created": datetime.datetime.now(),
-        "user_name": "uncleluoyang",
-        "store_name": "Uncle Luo Yang",
-        "tag": "Chinese",
-        "start_time": datetime.datetime.now(),
-        "close_time": datetime.datetime.now(),
+        "user_name": request.json["username"],
+        "store_name": request.json["store_name"],
+        "tag": request.json["tag"],
+        "start_time": utc_dt_start,
+        "close_time": utc_dt_close,
         "geo": {
-            "lat": 40.806709,
-            "lon": -73.966359
+            "lat": float(request.json["geo"]["lat"]),
+            "lon": float(request.json["geo"]["lon"])
         }
     }
-    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, '1', body))
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, request.json["username"], body))
 
 
-@app.route('/update/geo/<lat>/<lon>', methods=['GET'])
+@app.route('/update/time', methods=['POST'])
+def update_time():
+    username = request.json["username"]
+    result = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, username)
+    # uncleluoyang
+    # print request.json["start"]
+    local = pytz.timezone("America/New_York")
+    naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
+    local_dt_start = local.localize(naive_start, is_dst=None)
+    utc_dt_start = local_dt_start.astimezone(pytz.utc)
+
+    naive_close = datetime.strptime(request.json["close_time"], '%b %d %Y %H:%M')
+    local_dt_close = local.localize(naive_close, is_dst=None)
+    utc_dt_close = local_dt_close.astimezone(pytz.utc)
+    body = {
+        "user_name": username,
+        "store_name": result["store_name"],
+        "tag": result["tag"],
+        "start_time": utc_dt_start,
+        "close_time": utc_dt_close,
+        "geo": {
+            "lat": float(result["geo"]["lat"]),
+            "lon": float(result["geo"]["lon"])
+        }
+    }
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, username, body))
+
+
+@app.route('/update/geo', methods=['POST'])
 def update_geo():
+    username = request.json["username"]
+    lat = request.json["lat"]
+    lon = request.json["lon"]
+    result = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, username)
+    # uncleluoyang
     body = {
-        "text": "testing with geo update",
-        "created": datetime.datetime.now(),
-        "user_name": "uncleluoyang",
-        "store_name": "Uncle Luo Yang",
-        "tag": "Chinese",
-        "start_time": datetime.datetime.now(),
-        "close_time": datetime.datetime.now(),
+        "user_name": username,
+        "store_name": result["store_name"],
+        "tag": result["tag"],
+        "start_time": result["start_time"],
+        "close_time": result["close_time"],
         "geo": {
-            "lat": 40.806709,
-            "lon": -73.966359
+            "lat": float(lat),
+            "lon": float(lon)
         }
     }
-    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, '1', body))
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, username, body))
 
 
 # elastic search
@@ -357,7 +397,7 @@ def context(key_word):
 
 @app.route('/search/id/<index_id>', methods=['GET'])
 def search_id(index_id):
-    return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, 'tweet', int(index_id)))
+    return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, index_id))
 
 
 @app.route('/search/geo/<lat>/<lon>/', methods=['GET'])
