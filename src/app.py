@@ -11,6 +11,7 @@ import os
 import braintree
 import boto
 import boto.s3
+import boto3
 from boto.s3.key import Key
 from elastic.es import ESearch
 from datetime import datetime
@@ -223,13 +224,13 @@ def logout():
 # register in API post only
 @app.route('/register/<role>', methods=['POST'])
 def register(role):
-    uda = get_mongodb_collection(mongo, role)
+    uda = get_mongodb_collection(mongo, role.lower())
     if not uda:
         return abort(403)
-    output = uda.register(request.form)
-    print output
+    output = uda.register(request.form, role)
     if output['status'] and output["result"]["user"]["email"]:
         token = generate_confirmation_token(output["result"]["user"]["email"], app.secret_key)
+        # TODO: fix hardcode localhost
         msg = Message("foodTruck email verification", sender="rxie25@gmail.com", recipients=[output["result"]["user"]["email"]],
                       html='<b> Click for following link to verify your email  <a href="localhost:5000/confirm/'+token+'"> click here</a> </b>')
         #send
@@ -349,6 +350,9 @@ def create_index():
 
 @app.route('/add_new', methods=['POST'])
 def add_new():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session["username"]
     local = pytz.timezone("America/New_York")
     naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
     local_dt_start = local.localize(naive_start, is_dst=None)
@@ -359,7 +363,7 @@ def add_new():
     utc_dt_close = local_dt_close.astimezone(pytz.utc)
 
     body = {
-        "user_name": request.json["username"],
+        "user_name": username,
         "store_name": request.json["store_name"],
         "tag": request.json["tag"],
         "start_time": utc_dt_start,
@@ -369,12 +373,14 @@ def add_new():
             "lon": float(request.json["geo"]["lon"])
         }
     }
-    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, request.json["username"], body))
+    return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, username, body))
 
 
 @app.route('/update/time', methods=['POST'])
 def update_time():
-    username = request.json["username"]
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session["username"]
     result = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, username)
     # uncleluoyang
     # print request.json["start"]
@@ -402,7 +408,9 @@ def update_time():
 
 @app.route('/update/geo', methods=['POST'])
 def update_geo():
-    username = request.json["username"]
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session["username"]
     lat = request.json["lat"]
     lon = request.json["lon"]
     result = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, username)
@@ -447,6 +455,11 @@ def search_geo(lat, lon):
 def confirm_email(token):
     email = confirm_token(token, app.secret_key)
     return "email verified"
+'''
+sns = boto3.client('sns')
+number = '+17702233322'
+sns.publish(PhoneNumber = number, Message='example text message' )
+'''
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5001)

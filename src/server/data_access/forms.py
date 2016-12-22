@@ -49,6 +49,20 @@ class RegisterForm(Form):
         ]
     )
 
+class CustomerRegisterForm(RegisterForm):
+    cell = TextField(
+        u'Cellphone',
+        [DataRequired(), Length(min=10, max=10)]
+    )
+
+
+class VendorRegisterForm(RegisterForm):
+    storeName = TextField(
+        u'Store Name',
+        [DataRequired()]
+    )
+
+
 class ChangePasswordForm(Form):
     oldpassword = PasswordField(
         u'Old password',
