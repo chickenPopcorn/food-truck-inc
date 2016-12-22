@@ -50,7 +50,7 @@ mail = Mail(app)
 # AWS S3
 app.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
 app.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
-bucketName = 'vendors-6998'
+bucketName = 'vendor-menu'
 
 mongo = PyMongo(app)
 
@@ -113,27 +113,31 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
     sent = k.set_contents_from_file(file, cb=callback, md5=md5, reduced_redundancy=reduced_redundancy, rewind=True)
     # set appropriate ACL
     k.set_acl('public-read')
+    print k
 
     # Rewind for later use
     file.seek(0)
 
+    url = k.generate_url(expires_in=0, query_auth=False)
     if sent == size:
-        return True
-    return False
+        return url
+    return None
 
 
 @app.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-    if not session or session['logged_in'] != "vendor":
-        return abort(403)
-    #username = "tianci"
-    username = session['username']
+    # if not session or session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "testing"
+
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
             return abort(400)
         file = request.files['file']
+        item = request.form['itemname'] + '.jpg'
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename == '':
@@ -152,28 +156,32 @@ def upload_file():
             file.save(os.path.join(path, filename))
 
             file = open(os.path.join(path, filename), 'r+')
-            key = '/'.join([username, filename])
+            key = '/'.join([username, item])
 
-            if upload_to_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'], file, bucketName, key):
-                print 'It worked!'
-            else:
-                print 'The upload failed...'
+            url = upload_to_s3(app.config['S3_ACCESS_KEY'], app.config['S3_SECRET_KEY'], file, bucketName, key)
+            # if url is not None:
+            #     print 'It worked!'
+            # else:
+            #     print 'The upload failed...'
             file.close()
 
-            return '''   <!doctype html>
-                            <title>Uploaded a File</title>
-                            <h1>Upload Successful</h1>
+            return url
+            # return '''   <!doctype html>
+            #                 <title>Uploaded a File</title>
+            #                 <h1>Upload Successful</h1>
+            #
+            #                 '''
+    return None
+    # return '''
+    # <!doctype html>
+    # <title>Upload new File</title>
+    # <h1>Upload new File</h1>
+    # <form action="" method=post enctype=multipart/form-data>
+    #   <p><input type=file name=file>
+    #      <input type=submit value=Upload>
+    # </form>
+    # '''
 
-                            '''
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form action="" method=post enctype=multipart/form-data>
-      <p><input type=file name=file>
-         <input type=submit value=Upload>
-    </form>
-    '''
 
 def login_required(f):
     @wraps(f)
@@ -263,12 +271,17 @@ def update_profile():
 
 # vendor upload info
 @app.route('/addMenuItem', methods=['POST'])
-@login_required
+# @login_required
 def add_menu_item():
-    if session['logged_in'] != "vendor":
-        return abort(403)
-    vda = VendorDataAccess(mongo.db.vendors, session['username'])
-    output = vda.add_menu_item(request.form)
+    # if session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "testing"
+    vda = VendorDataAccess(mongo.db.vendorMenu, username)
+    image_url = upload_file()
+    if image_url is None:
+        return jsonify({"status": "failed", "message": "upload image failed."})
+    output = vda.add_menu_item(request.form, image_url)
     return jsonify(output)
 
 
