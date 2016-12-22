@@ -1,5 +1,5 @@
 import bcrypt
-from forms import LoginForm, RegisterForm, ChangePasswordForm, UpdateProfileForm, DeleteForm
+from forms import LoginForm, ChangePasswordForm, UpdateProfileForm, DeleteForm, VendorRegisterForm, CustomerRegisterForm
 
 class UserDataAccess:
     def __init__(self, users):
@@ -28,9 +28,12 @@ class UserDataAccess:
         login_user["password"].encode('utf-8')) \
         == login_user["password"].encode('utf-8')
 
-    def register(self, requestForm):
+    def register(self, requestForm, role):
         user, status, message = {}, False, ""
-        form = RegisterForm(requestForm)
+        if role == "Vendor":
+            form = VendorRegisterForm(requestForm)
+        else:
+            form = CustomerRegisterForm(requestForm)
         if form.validate():
             is_unique, message = self.__is_unique(form.username.data, form.email.data)
             if not is_unique:
@@ -39,14 +42,26 @@ class UserDataAccess:
             else:
                 status = True
                 hashpass = bcrypt.hashpw(form.password.data.encode('utf-8'), bcrypt.gensalt())
-                self.users.insert({
-                    "email": form.email.data,
-                    "password": hashpass,
-                    "firstname": form.firstname.data,
-                    "lastname": form.lastname.data,
-                    "username": form.username.data
-
-                })
+                if role == "Vendor":
+                    self.users.insert({
+                        "email": form.email.data,
+                        "password": hashpass,
+                        "firstname": form.firstname.data,
+                        "lastname": form.lastname.data,
+                        "username": form.username.data,
+                        "storeName": form.storeName.data
+                        
+                    })
+                else:
+                    self.users.insert({
+                                      "email": form.email.data,
+                                      "password": hashpass,
+                                      "firstname": form.firstname.data,
+                                      "lastname": form.lastname.data,
+                                      "username": form.username.data,
+                                      "cell": form.cell.data
+                                      
+                                      })
                 # TODO add creationdate
                 # user['creationdate'] = creationdate
                 login_user = self.users.find_one({

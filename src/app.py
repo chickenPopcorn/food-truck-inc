@@ -11,6 +11,7 @@ import os
 import braintree
 import boto
 import boto.s3
+import boto3
 from boto.s3.key import Key
 from elastic.es import ESearch
 import datetime
@@ -213,13 +214,13 @@ def logout():
 # register in API post only
 @app.route('/register/<role>', methods=['POST'])
 def register(role):
-    uda = get_mongodb_collection(mongo, role)
+    uda = get_mongodb_collection(mongo, role.lower())
     if not uda:
         return abort(403)
-    output = uda.register(request.form)
-    print output
+    output = uda.register(request.form, role)
     if output['status'] and output["result"]["user"]["email"]:
         token = generate_confirmation_token(output["result"]["user"]["email"], app.secret_key)
+        # TODO: fix hardcode localhost
         msg = Message("foodTruck email verification", sender="rxie25@gmail.com", recipients=[output["result"]["user"]["email"]],
                       html='<b> Click for following link to verify your email  <a href="localhost:5000/confirm/'+token+'"> click here</a> </b>')
         #send
@@ -393,6 +394,11 @@ def search_geo(lat, lon):
 def confirm_email(toke):
     email = confirm_token(token, app.secret_key)
     return "email verified"
+'''
+sns = boto3.client('sns')
+number = '+17702233322'
+sns.publish(PhoneNumber = number, Message='example text message' )
+'''
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5001)
