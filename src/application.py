@@ -412,6 +412,8 @@ def update_order_status():
         vendor = output["result"]["vendor"]
         message = 'Your order at ' + vendor + ' is ready for pick up.'
         SNS.publish(PhoneNumber=number, Message=message)
+    else:
+        abort(404)
     return jsonify(output)
 
 

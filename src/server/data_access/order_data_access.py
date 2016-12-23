@@ -63,13 +63,15 @@ class OrderDataAccess:
     def update_order_status(self, requestForm, customerInfo, vendorInfo):
         status, message = False, ""
         form = UpdateOrderStatusForm(requestForm)
+        num = None
+        vendor_name = None
         if form.validate():
             _id = None
             try:
                 _id = ObjectId(form.id.data)
             except:
                 message = "Invalid Id!"
-                return OrderDataAccess.return_output(status, message, str(_id))
+                return OrderDataAccess.return_update(status, message, num, vendor_name)
 
             res = self.transactions.update(
                 {"_id": _id},
