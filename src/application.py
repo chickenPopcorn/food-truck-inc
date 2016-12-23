@@ -398,12 +398,12 @@ def get_vendor_order():
 
 
 @application.route('/update_order_status', methods=['POST'])
-# @login_required
+@login_required
 def update_order_status():
-    # if session['logged_in'] != "vendor":
-    #     return abort(403)
-    # username = session['username']
-    username = "testing"
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
     oda = OrderDataAccess(mongo.db.transactions, username)
     output = oda.update_order_status(request.form, mongo.db.customerLogin, mongo.db.vendorLogin)
     # print jsonify(output)
