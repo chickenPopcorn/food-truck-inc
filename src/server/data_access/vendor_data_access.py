@@ -17,6 +17,7 @@ class VendorDataAccess:
         self.vendor = vendor
 
     def add_menu_item(self, requestForm, image_url):
+        #        print "in add menue item"
         status, message = False, ""
         form = VendorAddMenuItem(requestForm)
         if form.validate():
