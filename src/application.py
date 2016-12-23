@@ -307,6 +307,18 @@ def delete_menu_item():
     return jsonify(output)
 
 
+# vendor upload info
+@application.route('/get_menu_item', methods=['GET'])
+@login_required
+def get_menu_item():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    result_cursor = mongo.db.vendorMenu.find_one({"username": username})
+    return dumps(result_cursor)
+
+
 # path for transactions
 @application.route('/submit_order', methods=['POST'])
 @login_required
