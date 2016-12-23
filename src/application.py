@@ -388,7 +388,7 @@ def get_vendor_order():
         return abort(403)
     username = session['username']
     # username = "testing"
-    result_cursor = mongo.db.transactions.find({"$query": {"vendor": username, "status": "processing"}, "$orderby": {"timestamp": 1}})
+    result_cursor = mongo.db.transactions.find({"$query": {"vendor": username}, "$orderby": {"timestamp": 1}})
     result_list = []
     for entry in result_cursor:
         entry["id"] = str(entry["_id"])
