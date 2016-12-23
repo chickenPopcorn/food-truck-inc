@@ -2,6 +2,7 @@ from flask import Flask, request, session, jsonify, url_for, redirect, abort, fl
 from flask_pymongo import PyMongo
 from server.data_access.vendor_data_access import VendorDataAccess
 from server.data_access.user_data_access import UserDataAccess
+from server.data_access.order_data_access import OrderDataAccess
 import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
@@ -19,6 +20,8 @@ import pytz
 from server.data_access.email_verification import generate_confirmation_token
 from server.data_access.email_verification import confirm_token
 from flask_mail import Mail, Message
+from bson.json_util import dumps
+
 
 
 
@@ -34,7 +37,7 @@ app.config['MONGO_URI'] = os.environ['MONGO_URI']
 
 # file upload
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg', 'gif'])
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+#app.config['MAX_CONTENT_LENGTH'] = 160 * 10240 * 10240
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
 app.config['DEBUG'] = True
@@ -130,7 +133,7 @@ def upload_file():
     if not session or session['logged_in'] != "vendor":
         return abort(403)
     username = session['username']
-    # username = "testing"
+#    username = "testing"
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -144,9 +147,11 @@ def upload_file():
         if file.filename == '':
             flash('No selected file')
             return abort(400)
-        if file and allowed_file(file.filename):
+        if file : #and allowed_file(file.filename)
             filename = secure_filename(file.filename)
+  
             path = os.path.join(app.config['UPLOAD_FOLDER'], username)
+    
             # for testing saved locally
             if not os.path.exists(path):
                 try:
@@ -172,7 +177,7 @@ def upload_file():
             #                 <h1>Upload Successful</h1>
             #
             #                 '''
-    return None
+    return abort(400)
     # return '''
     # <!doctype html>
     # <title>Upload new File</title>
@@ -234,7 +239,7 @@ def register(role):
         msg = Message("foodTruck email verification", sender="rxie25@gmail.com", recipients=[output["result"]["user"]["email"]],
                       html='<b> Click for following link to verify your email  <a href="localhost:5000/confirm/'+token+'"> click here</a> </b>')
         #send
-        print "prepare to send email"
+        #print "prepare to send email"
         mail.send(msg)
     return jsonify(output)
 
@@ -274,13 +279,16 @@ def update_profile():
 @app.route('/addMenuItem', methods=['POST'])
 @login_required
 def add_menu_item():
+    #print request.form
     if session['logged_in'] != "vendor":
         return abort(403)
     username = session['username']
-    # username = "testing"
+    #    username = "testing"
     vda = VendorDataAccess(mongo.db.vendorMenu, username)
     image_url = upload_file()
+    # print image_url
     if image_url is None:
+        # print "image_url is none"
         return jsonify({"status": "failed", "message": "upload image failed."})
     output = vda.add_menu_item(request.form, image_url)
     return jsonify(output)
@@ -288,7 +296,7 @@ def add_menu_item():
 
 # vendor upload info
 @app.route('/deleteMenuItem', methods=['POST'])
-# @login_required
+@login_required
 def delete_menu_item():
     '''
     if session['logged_in'] != "vendor":
@@ -296,6 +304,63 @@ def delete_menu_item():
     '''
     vda = VendorDataAccess(mongo.db.vendors, "testing")
     output = vda.delete_menu_item(request.form)
+    return jsonify(output)
+
+
+# path for transactions
+@app.route('/submit_order', methods=['POST'])
+@login_required
+def submit_order():
+    if session['logged_in'] != "customer":
+        return abort(403)
+    username = session['username']
+    # username = "tianci"
+    oda = OrderDataAccess(mongo.db.transactions, username)
+    output = oda.customer_order(request.form)
+    return jsonify(output)
+
+
+@app.route('/get_customer_orders', methods=['GET'])
+@login_required
+def get_customer_order():
+    if session['logged_in'] != "customer":
+        return abort(403)
+    username = session['username']
+    # username = "tianci"
+    result_cursor = mongo.db.transactions.find({"$query": {"customer": username}, "$orderby": {"timestamp": -1}})
+    result_list = []
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        # print entry
+    return dumps(result_list)
+
+
+@app.route('/get_vendor_orders', methods=['GET'])
+@login_required
+def get_vendor_order():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    result_cursor = mongo.db.transactions.find({"$query": {"vendor": username, "status": "processing"}, "$orderby": {"timestamp": 1}})
+    result_list = []
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        #print entry
+    return dumps(result_list)
+
+
+@app.route('/update_order_status', methods=['POST'])
+@login_required
+def update_order_status():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    oda = OrderDataAccess(mongo.db.transactions, username)
+    output = oda.update_order_status(request.form)
     return jsonify(output)
 
 
