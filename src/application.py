@@ -79,6 +79,8 @@ ES = ESearch()
 INDEX_FOODTRUCK = 'test-index'
 INDEX_TYPE = 'tweets'
 
+# for text message
+SNS = boto3.setup_default_session(region_name='us-east-1')
 SNS = boto3.client('sns')
 
 
