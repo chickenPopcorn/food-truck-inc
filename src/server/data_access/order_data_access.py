@@ -38,7 +38,7 @@ class OrderDataAccess:
             _id = None
         return OrderDataAccess.return_output(status, message, str(_id))
 
-    def update_order_status(self, requestForm):
+    def update_order_status(self, requestForm, customerInfo):
         status, message = False, ""
         form = UpdateOrderStatusForm(requestForm)
         if form.validate():
@@ -55,12 +55,16 @@ class OrderDataAccess:
                     "$set": {"status": "Ready for pick up"}
                 }
             )
+            trans = self.transactions.find_one({"_id": _id})
+            print trans["customer"]
+            customer = trans["customer"]
+            num = customerInfo.find_one({"username": customer})["cell"]
             if res["nModified"] == 0:
-                message = 'Id does not exist!'
+                message = 'Nothing updated!'
             else:
                 status = True
                 message = 'Update Order Successfully!'
         else:
             message = 'Invalid form!'
             _id = None
-        return OrderDataAccess.return_output(status, message, str(_id))
+        return OrderDataAccess.return_output(status, message, num)

@@ -79,6 +79,8 @@ ES = ESearch()
 INDEX_FOODTRUCK = 'test-index'
 INDEX_TYPE = 'tweets'
 
+SNS = boto3.client('sns')
+
 
 def get_mongodb_collection(database, role):
     if role == "customer":
@@ -86,7 +88,7 @@ def get_mongodb_collection(database, role):
     elif role == "vendor":
         return UserDataAccess(database.db.vendorLogin)
     else:
-        return null
+        return None
 
 
 def allowed_file(filename):
@@ -117,7 +119,7 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
     sent = k.set_contents_from_file(file, cb=callback, md5=md5, reduced_redundancy=reduced_redundancy, rewind=True)
     # set applicationropriate ACL
     k.set_acl('public-read')
-    print k
+    # print k
 
     # Rewind for later use
     file.seek(0)
@@ -345,7 +347,7 @@ def get_customer_order():
     result_cursor = mongo.db.transactions.find({"$query": {"customer": username}, "$orderby": {"timestamp": -1}})
     result_list = []
     for entry in result_cursor:
-        print entry["timestamp"]
+        # print entry["timestamp"]
         result_list.append(entry)
         # print entry
     return dumps(result_list)
@@ -375,7 +377,11 @@ def update_order_status():
     username = session['username']
     # username = "testing"
     oda = OrderDataAccess(mongo.db.transactions, username)
-    output = oda.update_order_status(request.form)
+    output = oda.update_order_status(request.form, mongo.db.customerLogin)
+    # print jsonify(output)
+    if output["status"]:
+        number = '+1' + output["result"]["user"]
+        SNS.publish(PhoneNumber=number, Message='example text message')
     return jsonify(output)
 
 
@@ -435,7 +441,7 @@ def add_new():
         return abort(403)
     username = session["username"]
     # username = "testing"
-    print request.form
+    # print request.form
     local = pytz.timezone("America/New_York")
     #    print " ".join(request.form["start_time"].split(' ')[0:2])
     start_time = " ".join(request.form["start_time"].split(' ')[0:2])
@@ -447,6 +453,7 @@ def add_new():
     naive_close = datetime.strptime(close_time, '%Y-%m-%d %H:%M:%S')
     local_dt_close = local.localize(naive_close, is_dst=None)
     utc_dt_close = local_dt_close.astimezone(pytz.utc)
+
 
     body = {
         "user_name": username,
@@ -545,11 +552,6 @@ def search_geo(lat, lon):
 def confirm_email(token):
     email = confirm_token(token, application.secret_key)
     return "email verified"
-'''
-sns = boto3.client('sns')
-number = '+17702233322'
-sns.publish(PhoneNumber = number, Message='example text message' )
-'''
 
 if __name__ == '__main__':
     application.run(host="0.0.0.0", port=5001)
