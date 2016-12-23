@@ -11,7 +11,7 @@ def confirm_token(token, key, expiration=3600):
     try:
         email = serializer.loads(
                                  token,
-                                 salt=app.config['SECURITY_PASSWORD_SALT'],
+                                 salt=application.config['SECURITY_PASSWORD_SALT'],
                                  max_age=expiration
                                  )
     except:
