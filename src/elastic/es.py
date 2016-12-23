@@ -57,9 +57,11 @@ class ESearch:
         try:
             res = self.es.get(index=index_name, doc_type=index_type, id=index_id)
         except:
-            return res["_source"]
+            return None
         # print(res["_source"])
-        return res["_source"]
+        if res is not None:
+            return res["_source"]
+        return None
         # self.es.indices.refresh(index=index_name)
 
     def get_all(self, index_name):

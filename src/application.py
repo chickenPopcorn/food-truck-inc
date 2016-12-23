@@ -15,7 +15,7 @@ import boto.s3
 import boto3
 from boto.s3.key import Key
 from elastic.es import ESearch
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from server.data_access.email_verification import generate_confirmation_token
 from server.data_access.email_verification import confirm_token
@@ -409,6 +409,7 @@ def update_order_status():
     # print jsonify(output)
     if output["status"]:
         number = '+1' + output["result"]["user"]
+        message = 'Your order at ' + ' is ready for pick up.'
         SNS.publish(PhoneNumber=number, Message='example text message')
     return jsonify(output)
 
@@ -571,6 +572,19 @@ def context(key_word):
 def search_id(index_id):
     return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, index_id))
 
+
+@application.route('/search/open/<index_id>', methods=['GET'])
+def search_open(index_id):
+    res = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, index_id)
+    if res is None:
+        return abort(404)
+    start = res["start_time"]
+    close = res["close_time"]
+    start_time = datetime.strptime(start, '%Y-%m-%dT%H:%M:%S')
+    close_time = datetime.strptime(close, '%Y-%m-%dT%H:%M:%S')
+    if start_time - datetime.now() < timedelta(0) and close_time - datetime.now() > timedelta(0) :
+        return jsonify(ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, index_id))
+    return abort(404)
 
 @application.route('/search/geo/<lat>/<lon>/', methods=['GET'])
 def search_geo(lat, lon):
