@@ -476,10 +476,12 @@ def add_new():
     # local_dt_close = local.localize(naive_close, is_dst=None)
     # utc_dt_close = local_dt_close.astimezone(pytz.utc)
 
+    store_name = mongo.db.vendorLogin.find_one({"username": username})["storeName"]
+    print store_name
 
     body = {
         "user_name": username,
-        # "store_name": request.json["store_name"],
+        "store_name": store_name,
         # "tag": request.json["tag"],
         "start_time": naive_start,
         "close_time": naive_close,
@@ -513,7 +515,7 @@ def update_time():
     body = {
         "user_name": username,
         "store_name": result["store_name"],
-        "tag": result["tag"],
+        # "tag": result["tag"],
         "start_time": naive_start,
         "close_time": naive_close,
         "geo": {
