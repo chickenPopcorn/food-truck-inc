@@ -432,9 +432,11 @@ def add_new():
         return abort(403)
     username = session["username"]
     # username = "testing"
+    print request.form
     local = pytz.timezone("America/New_York")
-    start_time = request.json["start_time"].split('+')[0].strip()
-    close_time = request.json["close_time"].split('+')[0].strip()
+    #    print " ".join(request.form["start_time"].split(' ')[0:2])
+    start_time = " ".join(request.form["start_time"].split(' ')[0:2])
+    close_time = " ".join(request.form["close_time"].split(' ')[0:2])
     naive_start = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
     local_dt_start = local.localize(naive_start, is_dst=None)
     utc_dt_start = local_dt_start.astimezone(pytz.utc)
@@ -450,8 +452,8 @@ def add_new():
         "start_time": utc_dt_start,
         "close_time": utc_dt_close,
         "geo": {
-            "lat": float(request.json["lat"]),
-            "lon": float(request.json["lon"])
+            "lat": float(request.form["lat"]),
+            "lon": float(request.form["lon"])
         }
     }
     return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, username, body))
@@ -466,12 +468,14 @@ def update_time():
     result = ESearch.get_id(ES, INDEX_FOODTRUCK, INDEX_TYPE, username)
     # uncleluoyang
     # print request.json["start"]
+    start_time = " ".join(request.form["start_time"].split(' ')[0:2])
+    close_time = " ".join(request.form["close_time"].split(' ')[0:2])
     local = pytz.timezone("America/New_York")
-    naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
+    naive_start = datetime.strptime(start_time, '%b %d %Y %H:%M')
     local_dt_start = local.localize(naive_start, is_dst=None)
     utc_dt_start = local_dt_start.astimezone(pytz.utc)
 
-    naive_close = datetime.strptime(request.json["close_time"], '%b %d %Y %H:%M')
+    naive_close = datetime.strptime(close_time, '%b %d %Y %H:%M')
     local_dt_close = local.localize(naive_close, is_dst=None)
     utc_dt_close = local_dt_close.astimezone(pytz.utc)
     body = {
