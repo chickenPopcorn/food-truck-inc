@@ -141,7 +141,20 @@ class CustomerOrderForm(Form):
         [DataRequired()]
     )
 
-    items = FieldList(FormField(ItemForm))
+    itemname = StringField(
+        u'Item Name',
+        [DataRequired()]
+    )
+
+    price = FloatField(
+        u'Price',
+        [DataRequired(), NumberRange(min=0, message="Price must be non-negative")]
+    )
+
+    quantity = IntegerField(
+        u'Quantity',
+        [DataRequired(), NumberRange(min=0, message="Quantity must be non-negative")]
+    )
 
     # timestamp = DateTimeField(
     #     u'Timestamp',

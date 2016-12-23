@@ -1,6 +1,7 @@
 from forms import CustomerOrderForm, UpdateOrderStatusForm
 from datetime import datetime
 from bson import ObjectId
+from bson.json_util import dumps
 
 class OrderDataAccess:
     def __init__(self, transactions, username):
@@ -26,9 +27,10 @@ class OrderDataAccess:
                 "timestamp": datetime.utcnow(),
                 "vendor": form.vendor.data,
                 "customer": self.username,
-                "items": form.items.data
+                "price": form.price.data,
+                "quantity": form.quantity.data,
+                "itemname": form.itemname.data
             }
-            # print form.items.data
             _id = self.transactions.insert(entry)
             # print _id
             status = True
