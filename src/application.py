@@ -363,7 +363,7 @@ def get_vendor_order():
     result_cursor = mongo.db.transactions.find({"$query": {"vendor": username, "status": "processing"}, "$orderby": {"timestamp": 1}})
     result_list = []
     for entry in result_cursor:
-        print entry["timestamp"]
+        # print entry["timestamp"]
         result_list.append(entry)
         #print entry
     return dumps(result_list)
