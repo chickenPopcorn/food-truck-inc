@@ -320,8 +320,28 @@ def get_menu_item():
     username = session['username']
     # username = "testing"
     result = mongo.db.vendorMenu.find_one({"username": username})
+
+    try:
+        menu = result["menu"]
+        return dumps(menu)
+    except:
+        return abort(500)
+
+
+@application.route('/get_menu_item/<vendor>', methods=['GET'])
+@login_required
+def get_menu_item_customer(vendor):
+    if session['logged_in'] != "customer":
+        return abort(403)
+    # username = "testing"
+    result = mongo.db.vendorMenu.find_one({"username": vendor})
     # print result["menu"]
-    return dumps(result["menu"])
+
+    try:
+        menu = result["menu"]
+        return dumps(menu)
+    except:
+        return abort(500)
 
 
 # path for transactions
