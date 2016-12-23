@@ -149,6 +149,13 @@ class CustomerOrderForm(Form):
     #     format='%Y-%m-%d %H:%M:%S')
 
 
+class UpdateOrderStatusForm(Form):
+    id = StringField(
+        u'Id',
+        [DataRequired()]
+    )
+
+
 class ImageFileRequired(object):
     """
     Validates that an uploaded file from a flask_wtf FileField is, in fact an
@@ -167,6 +174,7 @@ class ImageFileRequired(object):
         if imghdr.what('unused', field.data.read()) not in ALLOWED_EXTENSIONS:
             raise ValidationError("image file type not supported")
         field.data.seek(0)
+
 
 class VendorDeleteMenuItem(Form):
     itemname = TextField(

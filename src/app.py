@@ -303,7 +303,7 @@ def delete_menu_item():
 
 
 # path for transactions
-@app.route('/submitOrder', methods=['POST'])
+@app.route('/submit_order', methods=['POST'])
 @login_required
 def submit_order():
     if session['logged_in'] != "customer":
@@ -315,7 +315,7 @@ def submit_order():
     return jsonify(output)
 
 
-@app.route('/getCustomerOrders', methods=['GET'])
+@app.route('/get_customer_orders', methods=['GET'])
 @login_required
 def get_customer_order():
     if session['logged_in'] != "customer":
@@ -331,7 +331,7 @@ def get_customer_order():
     return dumps(result_list)
 
 
-@app.route('/getVendorOrders', methods=['GET'])
+@app.route('/get_vendor_orders', methods=['GET'])
 @login_required
 def get_vendor_order():
     if session['logged_in'] != "vendor":
@@ -347,20 +347,16 @@ def get_vendor_order():
     return dumps(result_list)
 
 
-# @app.route('/update_order_status', methods=['POST'])
-# @login_required
-# def update_order_status():
-#     if session['logged_in'] != "vendor":
-#         return abort(403)
-#     username = session['username']
-#     # username = "testing"
-#     result_cursor = mongo.db.transactions.find_one({"_id": _id})
-#     result_list = []
-#     for entry in result_cursor:
-#         print entry["timestamp"]
-#         result_list.append(entry)
-#         #print entry
-#     return dumps(result_list)
+@app.route('/update_order_status', methods=['POST'])
+@login_required
+def update_order_status():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    oda = OrderDataAccess(mongo.db.transactions, username)
+    output = oda.update_order_status(request.form)
+    return jsonify(output)
 
 
 # pmt routes
