@@ -18,6 +18,17 @@ class OrderDataAccess:
             }
         }
 
+    @staticmethod
+    def return_update(status, message, cell, vendor):
+        return {
+            'status': status,
+            'message': message,
+            'result': {
+                'cell': cell,
+                'vendor': vendor
+            }
+        }
+
     def customer_order(self, requestForm, vendorMenu, customerLogin):
         status, message = False, ""
         form = CustomerOrderForm(requestForm)
@@ -49,7 +60,7 @@ class OrderDataAccess:
             _id = None
         return OrderDataAccess.return_output(status, message, str(_id))
 
-    def update_order_status(self, requestForm, customerInfo):
+    def update_order_status(self, requestForm, customerInfo, vendorInfo):
         status, message = False, ""
         form = UpdateOrderStatusForm(requestForm)
         if form.validate():
@@ -67,15 +78,13 @@ class OrderDataAccess:
                 }
             )
             trans = self.transactions.find_one({"_id": _id})
-            print trans["customer"]
+            # print trans["customer"]
             customer = trans["customer"]
             num = customerInfo.find_one({"username": customer})["cell"]
-            if res["nModified"] == 0:
-                message = 'Nothing updated!'
-            else:
-                status = True
-                message = 'Update Order Successfully!'
+            vendor_name = vendorInfo.find_one({"username": trans["vendor"]})['storeName']
+            status = True
+            message = 'Update Order Successfully!'
         else:
             message = 'Invalid form!'
             _id = None
-        return OrderDataAccess.return_output(status, message, num)
+        return OrderDataAccess.return_update(status, message, num, vendor_name)

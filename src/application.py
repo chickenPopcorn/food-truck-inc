@@ -249,7 +249,7 @@ def register(role):
         token = generate_confirmation_token(output["result"]["user"]["email"], application.secret_key)
         # TODO: fix hardcode localhost
         msg = Message("foodTruck email verification", sender="rxie25@gmail.com", recipients=[output["result"]["user"]["email"]],
-                      html='<b> Click for following link to verify your email  <a href="localhost:5000/confirm/'+token+'"> click here</a> </b>')
+                      html='<b> Click for following link to verify your email  <a href="http://ec2-52-90-78-57.compute-1.amazonaws.com/verified"> click here</a> </b>')
         #send
         #print "prepare to send email"
         mail.send(msg)
@@ -398,19 +398,20 @@ def get_vendor_order():
 
 
 @application.route('/update_order_status', methods=['POST'])
-@login_required
+# @login_required
 def update_order_status():
-    if session['logged_in'] != "vendor":
-        return abort(403)
-    username = session['username']
-    # username = "testing"
+    # if session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "testing"
     oda = OrderDataAccess(mongo.db.transactions, username)
-    output = oda.update_order_status(request.form, mongo.db.customerLogin)
+    output = oda.update_order_status(request.form, mongo.db.customerLogin, mongo.db.vendorLogin)
     # print jsonify(output)
     if output["status"]:
-        number = '+1' + output["result"]["user"]
-        message = 'Your order at ' + ' is ready for pick up.'
-        SNS.publish(PhoneNumber=number, Message='example text message')
+        number = '+1' + output["result"]["cell"]
+        vendor = output["result"]["vendor"]
+        message = 'Your order at ' + vendor + ' is ready for pick up.'
+        SNS.publish(PhoneNumber=number, Message=message)
     return jsonify(output)
 
 
@@ -596,6 +597,15 @@ def search_geo(lat, lon):
 def confirm_email(token):
     email = confirm_token(token, application.secret_key)
     return "email verified"
+
+
+@application.route('/verified', methods=['GET'])
+def email_verified():
+    return '''
+    <!doctype html>
+    <title>Email Verification</title>
+    <h1>Your Email is Verified!</h1>
+    '''
 
 if __name__ == '__main__':
     application.run(host="0.0.0.0", port=5001)
