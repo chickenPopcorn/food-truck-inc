@@ -2,10 +2,10 @@ import unittest
 import os
 import coverage
 from flask_script import Manager
-from app import app
+from application import application
 import shutil
 
-manager = Manager(app)
+manager = Manager(application)
 
 @manager.command
 def test():

@@ -53,9 +53,13 @@ class ESearch:
         return res
 
     def get_id(self, index_name, index_type, index_id):
-        res = self.es.get(index=index_name, doc_type=index_type, id=index_id)
-        print(res["_source"])
-        return res
+        res = None
+        try:
+            res = self.es.get(index=index_name, doc_type=index_type, id=index_id)
+        except:
+            return res["_source"]
+        # print(res["_source"])
+        return res["_source"]
         # self.es.indices.refresh(index=index_name)
 
     def get_all(self, index_name):
@@ -91,19 +95,43 @@ class ESearch:
                 search_type="scan",
                 size="20",
                 body=
-                {"query": {
-                    "filtered": {
-                        "filter": {
-                            "geo_distance": {
-                                "distance": distance,
-                                "geo": {
-                                    "lat": lat,
-                                    "lon": lon
+                {
+                    "query": {
+                        "filtered": {
+                            "query": {
+                                "bool": {
+                                    "must": [
+                                        {
+                                            "and": [
+                                                {"range": {
+                                                    "start_time": {
+                                                        "lte": "now"
+                                                    }
+                                                }
+                                                },
+                                                {"range": {
+                                                    "close_time": {
+                                                        "gt": "now"
+                                                    }
+                                                }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            },
+                            "filter": {
+                                "geo_distance": {
+                                    "distance": distance,
+                                    "geo": {
+                                        "lat": lat,
+                                        "lon": lon
+                                    }
                                 }
                             }
                         }
                     }
-                }}
+                }
             )
             scroll_res = self.scroll(res["_scroll_id"], "2m")
             return {"count": res["hits"]["total"], "result": scroll_res["hits"]["hits"]}
