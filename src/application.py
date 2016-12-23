@@ -308,7 +308,7 @@ def delete_menu_item():
 
 
 # path for transactions
-@app.route('/submit_order', methods=['POST'])
+@application.route('/submit_order', methods=['POST'])
 @login_required
 def submit_order():
     if session['logged_in'] != "customer":
@@ -320,7 +320,7 @@ def submit_order():
     return jsonify(output)
 
 
-@app.route('/get_customer_orders', methods=['GET'])
+@application.route('/get_customer_orders', methods=['GET'])
 @login_required
 def get_customer_order():
     if session['logged_in'] != "customer":
@@ -336,7 +336,7 @@ def get_customer_order():
     return dumps(result_list)
 
 
-@app.route('/get_vendor_orders', methods=['GET'])
+@application.route('/get_vendor_orders', methods=['GET'])
 @login_required
 def get_vendor_order():
     if session['logged_in'] != "vendor":
@@ -352,7 +352,7 @@ def get_vendor_order():
     return dumps(result_list)
 
 
-@app.route('/update_order_status', methods=['POST'])
+@application.route('/update_order_status', methods=['POST'])
 @login_required
 def update_order_status():
     if session['logged_in'] != "vendor":
