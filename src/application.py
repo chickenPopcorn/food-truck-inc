@@ -130,10 +130,10 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
 
 @application.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-    if not session or session['logged_in'] != "vendor":
-        return abort(403)
-    username = session['username']
-    # username = "test"
+    # if not session or session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "test"
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -142,6 +142,7 @@ def upload_file():
             return abort(400)
         file = request.files['file']
         item = request.form['itemname'] + '.jpg'
+        print item
         # if user does not select file, browser also
         # submit a empty part without filename
         if file.filename == '':
@@ -277,13 +278,13 @@ def update_profile():
 
 # vendor upload info
 @application.route('/addMenuItem', methods=['POST'])
-@login_required
+# @login_required
 def add_menu_item():
     #print request.form
-    if session['logged_in'] != "vendor":
-        return abort(403)
-    username = session['username']
-    # username = "test"
+    # if session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "test"
     vda = VendorDataAccess(mongo.db.vendorMenu, username)
     image_url = upload_file()
     # print image_url
@@ -317,7 +318,7 @@ def get_menu_item():
     # username = "testing"
     result = mongo.db.vendorMenu.find_one({"username": username})
     # print result["menu"]
-    return dumps(result["menu"])
+    return dumps(result)
 
 
 # path for transactions

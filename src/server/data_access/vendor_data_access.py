@@ -53,14 +53,19 @@ class VendorDataAccess:
                 else:
                     self.vendors.update_one(
                         {"username": self.vendor},
-                        {"$set": {
+                        {"$pull": {
+                            'menu': {"itemName": form.itemname.data}
+                        }})
+                    self.vendors.update_one(
+                        {"username": self.vendor},
+                        {"$push": {
                             'menu': {
                                 "itemName": form.itemname.data,
                                 "itemPrice": form.price.data,
                                 "image_url": image_url
                             }
                         }})
-                    message = "exist item updated successfully in the menu"
+                    message = "Exist item updated successfully in the menu"
         else:
             message = "invalid form input"
         return VendorDataAccess.return_output(status, message)
