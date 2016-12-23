@@ -359,9 +359,9 @@ def submit_order():
     if session['logged_in'] != "customer":
         return abort(403)
     username = session['username']
-    # username = "tianci"
+    # username = "testing"
     oda = OrderDataAccess(mongo.db.transactions, username)
-    output = oda.customer_order(request.form)
+    output = oda.customer_order(request.form, mongo.db.vendorMenu, mongo.db.customerLogin)
     return jsonify(output)
 
 

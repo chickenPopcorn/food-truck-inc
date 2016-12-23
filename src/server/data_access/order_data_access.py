@@ -18,18 +18,27 @@ class OrderDataAccess:
             }
         }
 
-    def customer_order(self, requestForm):
+    def customer_order(self, requestForm, vendorMenu, customerLogin):
         status, message = False, ""
         form = CustomerOrderForm(requestForm)
         if form.validate():
+            items = vendorMenu.find_one({"username": form.vendor.data})['menu']
+            image = None
+            for item in items:
+                if item["itemName"]== form.itemname.data:
+                    image = item["image_url"]
+            name = customerLogin.find_one({"username": self.username})
+            full_name = name["firstname"]+ " " + name["lastname"]
             entry = {
                 "status": "processing",
                 "timestamp": datetime.utcnow(),
                 "vendor": form.vendor.data,
                 "customer": self.username,
+                "customer_name": full_name,
                 "price": form.price.data,
                 "quantity": form.quantity.data,
-                "itemname": form.itemname.data
+                "itemname": form.itemname.data,
+                "image_url": image
             }
             _id = self.transactions.insert(entry)
             # print _id
