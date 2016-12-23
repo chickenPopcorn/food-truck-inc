@@ -56,6 +56,7 @@ application.config['S3_ACCESS_KEY'] = os.environ['S3_ACCESS_KEY']
 application.config['S3_SECRET_KEY'] = os.environ['S3_SECRET_KEY']
 bucketName = 'vendor-menu'
 
+
 mongo = PyMongo(application)
 
 braintree.Configuration.configure(
@@ -145,39 +146,44 @@ def upload_file():
             flash('No file part')
             print ('No file part')
             return abort(400)
-        file = request.files['file']
+        req_file = request.files['file']
         item = request.form['itemname'] + '.jpg'
         # if user does not select file, browser also
         # submit a empty part without filename
-        if file.filename == '':
+        if req_file.filename == '':
             flash('No selected file')
             print ('No selected file')
             return abort(400)
-        if file : #and allowed_file(file.filename)
-            filename = secure_filename(file.filename)
-  
-            path = os.path.join(application.config['UPLOAD_FOLDER'], username)
-    
-            # for testing saved locally
-            if not os.path.exists(path):
-                try:
-                    os.makedirs(path)
-                except OSError as exc:  # Guard against race condition
-                    if exc.errno != errno.EEXIST:
-                        raise
-            file.save(os.path.join(path, filename))
 
-            file = open(os.path.join(path, filename), 'r+')
-            key = '/'.join([username, item])
+        key = '/'.join([username, item])
+        url = upload_to_s3(application.config['S3_ACCESS_KEY'], application.config['S3_SECRET_KEY'], req_file, bucketName,
+                           key)
 
-            url = upload_to_s3(application.config['S3_ACCESS_KEY'], application.config['S3_SECRET_KEY'], file, bucketName, key)
-            # if url is not None:
-            #     print 'It worked!'
-            # else:
-            #     print 'The upload failed...'
-            file.close()
+        # if file : #and allowed_file(file.filename)
+        #     filename = secure_filename(file.filename)
+        #
+        #     path = os.path.join(application.config['UPLOAD_FOLDER'], username)
+        #
+        #     # for testing saved locally
+        #     if not os.path.exists(path):
+        #         try:
+        #             os.makedirs(path)
+        #         except OSError as exc:  # Guard against race condition
+        #             if exc.errno != errno.EEXIST:
+        #                 raise
+        #     file.save(os.path.join(path, filename))
+        #
+        #     file = open(os.path.join(path, filename), 'r+')
+        #     key = '/'.join([username, item])
+        #
+        #     url = upload_to_s3(application.config['S3_ACCESS_KEY'], application.config['S3_SECRET_KEY'], file, bucketName, key)
+        #     # if url is not None:
+        #     #     print 'It worked!'
+        #     # else:
+        #     #     print 'The upload failed...'
+        #     file.close()
 
-            return url
+        return url
             # return '''   <!doctype html>
             #                 <title>Uploaded a File</title>
             #                 <h1>Upload Successful</h1>

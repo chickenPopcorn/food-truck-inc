@@ -66,6 +66,7 @@ class VendorDataAccess:
                             }
                         }})
                     message = "Exist item updated successfully in the menu"
+                    status = True
         else:
             message = "invalid form input"
         return VendorDataAccess.return_output(status, message)
