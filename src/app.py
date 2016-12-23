@@ -2,6 +2,7 @@ from flask import Flask, request, session, jsonify, url_for, redirect, abort, fl
 from flask_pymongo import PyMongo
 from server.data_access.vendor_data_access import VendorDataAccess
 from server.data_access.user_data_access import UserDataAccess
+from server.data_access.order_data_access import OrderDataAccess
 import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
@@ -19,6 +20,8 @@ import pytz
 from server.data_access.email_verification import generate_confirmation_token
 from server.data_access.email_verification import confirm_token
 from flask_mail import Mail, Message
+from bson.json_util import dumps
+
 
 
 
@@ -293,7 +296,7 @@ def add_menu_item():
 
 # vendor upload info
 @app.route('/deleteMenuItem', methods=['POST'])
-# @login_required
+@login_required
 def delete_menu_item():
     '''
     if session['logged_in'] != "vendor":
@@ -301,6 +304,63 @@ def delete_menu_item():
     '''
     vda = VendorDataAccess(mongo.db.vendors, "testing")
     output = vda.delete_menu_item(request.form)
+    return jsonify(output)
+
+
+# path for transactions
+@app.route('/submit_order', methods=['POST'])
+@login_required
+def submit_order():
+    if session['logged_in'] != "customer":
+        return abort(403)
+    username = session['username']
+    # username = "tianci"
+    oda = OrderDataAccess(mongo.db.transactions, username)
+    output = oda.customer_order(request.form)
+    return jsonify(output)
+
+
+@app.route('/get_customer_orders', methods=['GET'])
+@login_required
+def get_customer_order():
+    if session['logged_in'] != "customer":
+        return abort(403)
+    username = session['username']
+    # username = "tianci"
+    result_cursor = mongo.db.transactions.find({"$query": {"customer": username}, "$orderby": {"timestamp": -1}})
+    result_list = []
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        # print entry
+    return dumps(result_list)
+
+
+@app.route('/get_vendor_orders', methods=['GET'])
+@login_required
+def get_vendor_order():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    result_cursor = mongo.db.transactions.find({"$query": {"vendor": username, "status": "processing"}, "$orderby": {"timestamp": 1}})
+    result_list = []
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        #print entry
+    return dumps(result_list)
+
+
+@app.route('/update_order_status', methods=['POST'])
+@login_required
+def update_order_status():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    oda = OrderDataAccess(mongo.db.transactions, username)
+    output = oda.update_order_status(request.form)
     return jsonify(output)
 
 
