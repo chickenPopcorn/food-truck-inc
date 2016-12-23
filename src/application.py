@@ -135,10 +135,10 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
 
 @application.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-    # if not session or session['logged_in'] != "vendor":
-    #     return abort(403)
-    # username = session['username']
-    username = "test"
+    if not session or session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "test"
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -289,13 +289,13 @@ def update_profile():
 
 # vendor upload info
 @application.route('/addMenuItem', methods=['POST'])
-# @login_required
+@login_required
 def add_menu_item():
     #print request.form
-    # if session['logged_in'] != "vendor":
-    #     return abort(403)
-    # username = session['username']
-    username = "test"
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "test"
     vda = VendorDataAccess(mongo.db.vendorMenu, username)
     image_url = upload_file()
     # print image_url
