@@ -117,8 +117,8 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
     bucket = conn.get_bucket(bucket, validate=True)
     k = Key(bucket)
     k.key = key
-    if content_type:
-        k.set_metadata('Content-Type', content_type)
+    # if content_type:
+    k.set_metadata('Content-Type', 'image/jpeg')
     sent = k.set_contents_from_file(file, cb=callback, md5=md5, reduced_redundancy=reduced_redundancy, rewind=True)
     # set applicationropriate ACL
     k.set_acl('public-read')
@@ -135,10 +135,10 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, file, bucket, key, ca
 
 @application.route('/upload/', methods=['GET', 'POST'])
 def upload_file():
-    if not session or session['logged_in'] != "vendor":
-        return abort(403)
-    username = session['username']
-    # username = "test"
+    # if not session or session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "test"
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -289,13 +289,13 @@ def update_profile():
 
 # vendor upload info
 @application.route('/addMenuItem', methods=['POST'])
-@login_required
+# @login_required
 def add_menu_item():
     #print request.form
-    if session['logged_in'] != "vendor":
-        return abort(403)
-    username = session['username']
-    # username = "test"
+    # if session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session['username']
+    username = "test"
     vda = VendorDataAccess(mongo.db.vendorMenu, username)
     image_url = upload_file()
     # print image_url
