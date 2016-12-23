@@ -315,8 +315,9 @@ def get_menu_item():
         return abort(403)
     username = session['username']
     # username = "testing"
-    result_cursor = mongo.db.vendorMenu.find_one({"username": username})
-    return dumps(result_cursor)
+    result = mongo.db.vendorMenu.find_one({"username": username})
+    # print result["menu"]
+    return dumps(result["menu"])
 
 
 # path for transactions
