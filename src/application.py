@@ -420,11 +420,13 @@ def add_new():
     # username = session["username"]
     username = "testing"
     local = pytz.timezone("America/New_York")
-    naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
+    start_time = request.json["start_time"].split('+')[0].strip()
+    close_time = request.json["close_time"].split('+')[0].strip()
+    naive_start = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
     local_dt_start = local.localize(naive_start, is_dst=None)
     utc_dt_start = local_dt_start.astimezone(pytz.utc)
 
-    naive_close = datetime.strptime(request.json["close_time"], '%b %d %Y %H:%M')
+    naive_close = datetime.strptime(close_time, '%Y-%m-%d %H:%M:%S')
     local_dt_close = local.localize(naive_close, is_dst=None)
     utc_dt_close = local_dt_close.astimezone(pytz.utc)
 
