@@ -350,9 +350,10 @@ def create_index():
 
 @app.route('/add_new', methods=['POST'])
 def add_new():
-    if session['logged_in'] != "vendor":
-        return abort(403)
-    username = session["username"]
+    # if session['logged_in'] != "vendor":
+    #     return abort(403)
+    # username = session["username"]
+    username = "testing"
     local = pytz.timezone("America/New_York")
     naive_start = datetime.strptime(request.json["start_time"], '%b %d %Y %H:%M')
     local_dt_start = local.localize(naive_start, is_dst=None)
@@ -364,13 +365,13 @@ def add_new():
 
     body = {
         "user_name": username,
-        "store_name": request.json["store_name"],
-        "tag": request.json["tag"],
+        # "store_name": request.json["store_name"],
+        # "tag": request.json["tag"],
         "start_time": utc_dt_start,
         "close_time": utc_dt_close,
         "geo": {
-            "lat": float(request.json["geo"]["lat"]),
-            "lon": float(request.json["geo"]["lon"])
+            "lat": float(request.json["lat"]),
+            "lon": float(request.json["lon"])
         }
     }
     return jsonify(ESearch.feed_data(ES, INDEX_FOODTRUCK, username, body))
