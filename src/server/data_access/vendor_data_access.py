@@ -54,12 +54,12 @@ class VendorDataAccess:
                     self.vendors.update_one(
                         {"username": self.vendor},
                         {"$pull": {
-                            'menu': {"itemName": form.itemname.data}
+                            "menu": {"itemName": form.itemname.data}
                         }})
                     self.vendors.update_one(
                         {"username": self.vendor},
                         {"$push": {
-                            'menu': {
+                            "menu": {
                                 "itemName": form.itemname.data,
                                 "itemPrice": form.price.data,
                                 "image_url": image_url
@@ -79,8 +79,8 @@ class VendorDataAccess:
                           {"menu": {"$elemMatch": {'itemName': form.itemname.data}}}]}):
                 message = "item doesn't exit in menu"
             else:
-                self.vendors.update_one({
-                    "username": self.vendor},
+                self.vendors.update_one(
+                    {"username": self.vendor},
                     {"$pull": {"menu": {"itemName": form.itemname.data}}})
                 status = True
                 message = "item deleted successfully from menu"
