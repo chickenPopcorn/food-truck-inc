@@ -291,7 +291,7 @@ def add_menu_item():
 
 # vendor upload info
 @app.route('/deleteMenuItem', methods=['POST'])
-# @login_required
+@login_required
 def delete_menu_item():
     '''
     if session['logged_in'] != "vendor":
@@ -315,20 +315,52 @@ def submit_order():
     return jsonify(output)
 
 
-@app.route('/getOrders', methods=['GET'])
+@app.route('/getCustomerOrders', methods=['GET'])
 @login_required
-def get_order():
+def get_customer_order():
+    if session['logged_in'] != "customer":
+        return abort(403)
+    username = session['username']
+    # username = "tianci"
+    result_cursor = mongo.db.transactions.find({"$query": {"customer": username}, "$orderby": {"timestamp": -1}})
+    result_list = []
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        # print entry
+    return dumps(result_list)
+
+
+@app.route('/getVendorOrders', methods=['GET'])
+@login_required
+def get_vendor_order():
     if session['logged_in'] != "vendor":
         return abort(403)
     username = session['username']
     # username = "testing"
-    result_cursor = mongo.db.transactions.find({"vendor": username, "status": "processing"})
+    result_cursor = mongo.db.transactions.find({"$query": {"vendor": username, "status": "processing"}, "$orderby": {"timestamp": 1}})
     result_list = []
-    # for entry in result_cursor:
-    #     result_list.append(entry)
-        # print entry
+    for entry in result_cursor:
+        print entry["timestamp"]
+        result_list.append(entry)
+        #print entry
+    return dumps(result_list)
 
-    return dumps(result_cursor)
+
+# @app.route('/update_order_status', methods=['POST'])
+# @login_required
+# def update_order_status():
+#     if session['logged_in'] != "vendor":
+#         return abort(403)
+#     username = session['username']
+#     # username = "testing"
+#     result_cursor = mongo.db.transactions.find_one({"_id": _id})
+#     result_list = []
+#     for entry in result_cursor:
+#         print entry["timestamp"]
+#         result_list.append(entry)
+#         #print entry
+#     return dumps(result_list)
 
 
 # pmt routes

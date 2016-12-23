@@ -24,7 +24,7 @@ class OrderDataAccess:
                 "status": "processing",
                 "timestamp": datetime.utcnow(),
                 "vendor": form.vendor.data,
-                "username": self.username,
+                "customer": self.username,
                 "items": form.items.data
             }
             # print form.items.data
@@ -36,3 +36,4 @@ class OrderDataAccess:
             message = 'Invalid form!'
             _id = None
         return OrderDataAccess.return_output(status, message, str(_id))
+
