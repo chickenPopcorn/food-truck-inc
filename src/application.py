@@ -133,7 +133,7 @@ def upload_file():
     if not session or session['logged_in'] != "vendor":
         return abort(403)
     username = session['username']
-#    username = "testing"
+    # username = "test"
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -283,7 +283,7 @@ def add_menu_item():
     if session['logged_in'] != "vendor":
         return abort(403)
     username = session['username']
-    #    username = "testing"
+    # username = "test"
     vda = VendorDataAccess(mongo.db.vendorMenu, username)
     image_url = upload_file()
     # print image_url
@@ -295,16 +295,28 @@ def add_menu_item():
 
 
 # vendor upload info
-@application.route('/deleteMenuItem', methods=['POST'])
+@application.route('/delete_menu_item', methods=['POST'])
 @login_required
 def delete_menu_item():
-    '''
     if session['logged_in'] != "vendor":
         return abort(403)
-    '''
-    vda = VendorDataAccess(mongo.db.vendors, "testing")
+    username = session['username']
+    # username = "testing"
+    vda = VendorDataAccess(mongo.db.vendorMenu, username)
     output = vda.delete_menu_item(request.form)
     return jsonify(output)
+
+
+# vendor upload info
+@application.route('/get_menu_item', methods=['GET'])
+@login_required
+def get_menu_item():
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session['username']
+    # username = "testing"
+    result_cursor = mongo.db.vendorMenu.find_one({"username": username})
+    return dumps(result_cursor)
 
 
 # path for transactions
@@ -414,11 +426,12 @@ def create_index():
 
 
 @application.route('/add_new', methods=['POST'])
+@login_required
 def add_new():
-    # if session['logged_in'] != "vendor":
-    #     return abort(403)
-    # username = session["username"]
-    username = "testing"
+    if session['logged_in'] != "vendor":
+        return abort(403)
+    username = session["username"]
+    # username = "testing"
     local = pytz.timezone("America/New_York")
     start_time = request.json["start_time"].split('+')[0].strip()
     close_time = request.json["close_time"].split('+')[0].strip()
@@ -445,6 +458,7 @@ def add_new():
 
 
 @application.route('/update/time', methods=['POST'])
+@login_required
 def update_time():
     if session['logged_in'] != "vendor":
         return abort(403)
@@ -475,6 +489,7 @@ def update_time():
 
 
 @application.route('/update/geo', methods=['POST'])
+@login_required
 def update_geo():
     if session['logged_in'] != "vendor":
         return abort(403)

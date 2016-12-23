@@ -39,10 +39,10 @@ class VendorDataAccess:
                     "$and": [{"username": self.vendor},
                               {"menu": {"$elemMatch": {'itemName': form.itemname.data}}}]
                 }):
-                    self.vendors.update_one({
-                        "username": self.vendor},
+                    self.vendors.update_one(
+                        {"username": self.vendor},
                         {"$push": {
-                            'menu':{
+                            'menu': {
                                 "itemName": form.itemname.data,
                                 "itemPrice": form.price.data,
                                 "image_url": image_url
@@ -51,7 +51,16 @@ class VendorDataAccess:
                     status = True
                     message = "item added successfully to menu"
                 else:
-                    message = "item already exist in the menu"
+                    self.vendors.update_one(
+                        {"username": self.vendor},
+                        {"$set": {
+                            'menu': {
+                                "itemName": form.itemname.data,
+                                "itemPrice": form.price.data,
+                                "image_url": image_url
+                            }
+                        }})
+                    message = "exist item updated successfully in the menu"
         else:
             message = "invalid form input"
         return VendorDataAccess.return_output(status, message)
@@ -62,12 +71,12 @@ class VendorDataAccess:
         if form.validate():
             if not self.vendors.find_one({
                 "$and": [{"username": self.vendor},
-                          {"menu_items": { "$elemMatch": { 'item_name': form.itemname.data}}}]}):
+                          {"menu": {"$elemMatch": {'itemName': form.itemname.data}}}]}):
                 message = "item doesn't exit in menu"
             else:
                 self.vendors.update_one({
                     "username": self.vendor},
-                    {"$pull": { 'menu_items':{"item_name": form.itemname.data}}})
+                    {"$pull": {"menu": {"itemName": form.itemname.data}}})
                 status = True
                 message = "item deleted successfully from menu"
         else:
